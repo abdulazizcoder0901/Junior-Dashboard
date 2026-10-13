@@ -2805,7 +2805,8 @@ document.getElementById("lgForm").onsubmit=function(ev){
         hideLogin();load();
       } else if(Array.isArray(d)){
         err.textContent="Apps Script hali yangilanmagan (login yo'q). Yangi kodni joylab, yangi versiya chiqaring.";
-      } else err.textContent="Login yoki parol noto'g'ri.";
+      } else if(d&&d.error==="login") err.textContent="Login yoki parol noto'g'ri.";
+      else err.textContent="Server xatosi: "+((d&&(d.message||d.error))||"noma'lum javob")+(d&&d.v?" (skript "+d.v+")":"");
     })
     .catch(function(){btn.disabled=false;err.textContent="Serverga ulanib bo'lmadi. Internetni tekshiring.";});
 };
