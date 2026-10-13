@@ -2689,7 +2689,7 @@ var MONC=["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr
 var MSHORT=["yan","fev","mar","apr","may","iyn","iyl","avg","sen","okt","noy","dek"];
 
 var range={from:null,to:null,preset:"week"}, selIdx=null, days=[], loadedKey=null, reqId=0, nextAt=null, timer=null;
-var auth=null, pageCache={}, openSet={}, storyN={}, lastProps=null;
+var auth=null, pageCache={}, openSet={}, storyN={}, failedN={}, lastRows=[], lastProps=null;
 var STORY_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис)|stor(y|is)\s*[-–#]?\s*\d+)/i;
 function countStories(blocks){return (blocks||[]).filter(function(x){return STORY_RE.test(x.text||"");}).length;}
 
@@ -2777,13 +2777,26 @@ function hideLogin(){
   document.getElementById("login").classList.add("hide");
   document.getElementById("hUser").innerHTML=auth?'<b>'+esc(auth.user)+'</b>':'';
 }
+/* Parol URL'da (loglar, tarix) qolmasligi uchun POST tanasida yuboriladi.
+   text/plain — Apps Script uchun CORS preflight'siz ishlaydi.
+   Apps Script'da doPost bo'lmasa (xato sahifasi, CORS'siz), eski GET usuliga qaytadi. */
+var loginViaGet=false;
+function loginRequest(u,p){
+  return fetch(API,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"login",user:u,pass:p})})
+    .then(function(r){return r.json();})
+    .then(function(d){loginViaGet=false;return d;},function(){
+      loginViaGet=true;
+      return fetch(API+"?action=login&user="+encodeURIComponent(u)+"&pass="+encodeURIComponent(p),{redirect:"follow"})
+        .then(function(r){return r.json();});
+    });
+}
 document.getElementById("lgForm").onsubmit=function(ev){
   ev.preventDefault();
   var u=document.getElementById("lgUser").value.trim(), p=document.getElementById("lgPass").value;
   var btn=document.getElementById("lgBtn"), err=document.getElementById("lgErr");
   btn.disabled=true;err.textContent="Tekshirilmoqda…";
-  fetch(API+"?action=login&user="+encodeURIComponent(u)+"&pass="+encodeURIComponent(p),{redirect:"follow"})
-    .then(function(r){return r.json();})
+  loginRequest(u,p)
     .then(function(d){
       btn.disabled=false;
       if(d&&d.ok&&d.token){
@@ -2860,30 +2873,33 @@ function fmtN(a){return sumN(a)+(pendingN(a)?"…":"");}
 function flat(k){return [].concat.apply([],days.map(function(d){return d[k];}));}
 
 /* ---------- render ---------- */
+/* Bugun hali story bo'lmasa, kun hali tugamagan — o'tkazilgan deb hisoblanmaydi. */
+function counted(d){return d.past||(d.today&&d.posted.length>0);}
+function catOf(a,k){return a.filter(function(s){return hasCat(s,k);});}
 function renderMetrics(){
-  var elapsed=days.filter(function(d){return d.past||d.today;}).length;
+  /* Barcha raqamlar bir birlikda: joylangan story'lar soni (Notion sahifasi ichidagi "N-story" qatorlari). */
+  var elapsed=days.filter(counted).length;
   var active=days.filter(function(d){return d.posted.length>0;}).length;
-  var all=flat("posted"),plans=sumN(flat("plans")),total=sumN(all);
-  var every=all.concat(flat("plans"));
-  var noCat=every.filter(function(s){return !String(s.raw||"").trim();}).length;
-  var sot=every.filter(function(s){return hasCat(s,"sotuv");}).length;
-  var inter=every.filter(function(s){return hasCat(s,"interaktiv");}).length;
+  var all=flat("posted"),planList=flat("plans");
+  var noCat=all.concat(planList).filter(function(s){return !String(s.raw||"").trim();}).length;
+  var sot=catOf(all,"sotuv"),inter=catOf(all,"interaktiv"),interN=sumN(inter);
+  var failed=all.concat(planList).filter(function(s){return failedN[s.id];}).length;
   document.getElementById("metrics").innerHTML=
     '<div class="mc"><div class="mv">'+(elapsed?active+"/"+elapsed:"—")+'</div><div class="ml">Faol kunlar</div></div>'+
-    '<div class="mc"><div class="mv no">'+sot+'</div><div class="ml">Sotuv story'+(noCat?'<br><span style="color:var(--pl-tx)">⚠ '+noCat+' ta qatorda kategoriya o\'qilmadi</span>':'')+'</div></div>'+
-    '<div class="mc"><div class="mv '+(inter?"ac":"pl")+'">'+inter+'</div><div class="ml">Interaktiv</div></div>'+
-    '<div class="mc"><div class="mv ok">'+fmtN(all)+'</div><div class="ml">Joylangan story</div></div>';
-  document.getElementById("planInfo").textContent=plans?("Rejada (hali joylanmagan): "+plans+" ta story"):"";
+    '<div class="mc"><div class="mv no">'+fmtN(sot)+'</div><div class="ml">Sotuv story'+(noCat?'<br><span style="color:var(--pl-tx)">⚠ '+noCat+' ta qatorda kategoriya o\'qilmadi</span>':'')+'</div></div>'+
+    '<div class="mc"><div class="mv '+(interN||pendingN(inter)?"ac":"pl")+'">'+fmtN(inter)+'</div><div class="ml">Interaktiv story</div></div>'+
+    '<div class="mc"><div class="mv ok">'+fmtN(all)+'</div><div class="ml">Joylangan story'+(failed?'<br><span style="color:var(--no-tx)">⚠ '+failed+' ta sahifa yuklanmadi — ⟳</span>':'')+'</div></div>';
+  document.getElementById("planInfo").textContent=planList.length?("Rejada (hali joylanmagan): "+fmtN(planList)+" ta story"):"";
   document.getElementById("hActive").textContent=elapsed?Math.round(active/elapsed*100)+"%":"—";
   document.getElementById("hTotal").textContent=fmtN(all);
-  document.getElementById("hPlan").innerHTML=plans?'<span class="hdot d-warn"></span>'+plans+' reja':'';
+  document.getElementById("hPlan").innerHTML=planList.length?'<span class="hdot d-warn"></span>'+fmtN(planList)+' reja':'';
 }
 
 function dayCard(d,i){
   var cls="dc";
   if(d.posted.length) cls+=" ok";
-  else if(d.past||d.today) cls+=" no";
-  else cls+=" future";
+  else if(d.past) cls+=" no";
+  else if(!d.today) cls+=" future";
   if(i===selIdx) cls+=" sel";
   var inner='<div class="dn">'+d.n+(d.today?' · bugun':'')+'</div><div class="dd">'+d.date+'</div>';
   if(d.posted.length){
@@ -2975,11 +2991,9 @@ function toggleStory(el){
     .then(function(d){
       var r=finishPage(id,d.blocks);
       pageCache[id]=r;
-      var cur=document.querySelector('.tg[data-id="'+id+'"]');
-      if(cur){
-        cur.querySelector(".tg-b").innerHTML=r.html;
-        if(r.count){var tags=cur.querySelector(".tg-tags");tags.insertAdjacentHTML("afterbegin",'<span class="chip cnt2">'+r.count+' ta story</span>');}
-      }
+      /* sonni umumiy holatga yozib, hammasini qayta chizamiz (chip ikki marta chiqmasin, metrikalar yangilansin) */
+      storyN[id]=r.count;delete failedN[id];
+      refreshViews(lastRows);
     })
     .catch(function(e){
       if(e.message==="auth") return;
@@ -2992,21 +3006,21 @@ function renderDetail(){
   if(!d){box.innerHTML="";return;}
   var icon,bg,sub;
   if(d.posted.length){icon="✓";bg="var(--ok-bg)";}
-  else if(d.past||d.today){icon="!";bg="var(--no-bg)";}
+  else if(d.past){icon="!";bg="var(--no-bg)";}
   else {icon="📅";bg="var(--acc-soft)";}
   sub=fmtN(d.posted)+' ta story joylangan'+(d.plans.length?', '+fmtN(d.plans)+' ta story rejada':'');
   if(!d.stories.length) sub=d.today?'Bugun hali story joylanmagan':(d.past?'Hech narsa joylanmagan':'Bu kunga reja yo\'q');
-  var head='<div class="dh"><div class="di" style="background:'+bg+';color:'+(d.posted.length?'var(--ok-tx)':(d.past||d.today)?'var(--no-tx)':'var(--acc)')+';font-weight:700">'+icon+'</div>'+
+  var head='<div class="dh"><div class="di" style="background:'+bg+';color:'+(d.posted.length?'var(--ok-tx)':d.past?'var(--no-tx)':'var(--acc)')+';font-weight:700">'+icon+'</div>'+
     '<div><div class="dt">'+d.label+(d.today?' — Bugun':'')+'</div><div class="ds">'+sub+'</div></div></div>';
   if(!d.stories.length){box.innerHTML=head;return;}
-  var sot=d.posted.filter(function(s){return hasCat(s,"sotuv");}).length;
-  var inter=d.posted.filter(function(s){return hasCat(s,"interaktiv");}).length;
+  var sot=catOf(d.posted,"sotuv");
+  var inter=catOf(d.posted,"interaktiv").length;
   var badges='';
   if(d.posted.length){
-    if(sot) badges+='<span class="warn">'+sot+' ta sotuv</span>';
+    if(sot.length) badges+='<span class="warn">'+fmtN(sot)+' ta sotuv story</span>';
     badges+=inter?'<span class="good">Interaktiv bor</span>':'<span class="bad">Interaktiv yo\'q</span>';
   }
-  if(d.past&&d.plans.length) badges+='<span class="bad">'+d.plans.length+' ta reja bajarilmagan</span>';
+  if(d.past&&d.plans.length) badges+='<span class="bad">'+fmtN(d.plans)+' ta story rejasi bajarilmagan</span>';
   box.innerHTML=head+d.stories.map(tgHtml).join("")+(badges?'<div class="badges">'+badges+'</div>':'');
   box.querySelectorAll(".tg-h").forEach(function(h){h.onclick=function(){toggleStory(h.parentNode);};});
 }
@@ -3026,7 +3040,7 @@ function renderIssues(){
       "<br>Notion'dagi ustunlar: "+cols+
       "<br>Tekshiring: Kategoriya ustunida qiymat tanlanganmi va ustun nomi «Kategoriya» deb yozilganmi.","warn","Kategoriya"));
   }
-  if(!days.filter(function(d){return d.past||d.today;}).length){
+  if(!days.filter(counted).length){
     el.innerHTML=issue("🗓️","Bu oraliq hali boshlanmagan","Rejani Notion'da \"Reja\" holati bilan kiritib boring.","good","Reja");
     tab.textContent="Muammolar";return;
   }
@@ -3114,8 +3128,8 @@ function fetchCounts(list,my,rows){
   }
   function single(item){
     return api({action:"page",id:item.id,token:auth?auth.token:""})
-      .then(function(d){pageCache[item.id]=finishPage(item.id,d.blocks);var n=countStories(d.blocks);storyN[item.id]=n;memCache[item.id]={t:Date.now(),n:n};})
-      .catch(function(){storyN[item.id]=0;});
+      .then(function(d){pageCache[item.id]=finishPage(item.id,d.blocks);var n=countStories(d.blocks);storyN[item.id]=n;delete failedN[item.id];memCache[item.id]={t:Date.now(),n:n};})
+      .catch(function(){storyN[item.id]=0;failedN[item.id]=1;});
   }
   function runGroup(g){
     if(legacy) return g.reduce(function(p,item){return p.then(function(){return single(item).then(function(){progress(1);});});},Promise.resolve());
@@ -3124,12 +3138,12 @@ function fetchCounts(list,my,rows){
         if(!d.pages){legacy=true;return runGroup(g);}      /* eski Apps Script: bittalab */
         g.forEach(function(item){
           var p=d.pages[item.id];
-          if(p&&Array.isArray(p.b)){pageCache[item.id]=finishPage(item.id,p.b);storyN[item.id]=countStories(p.b);cachePut(item.id,item.e,storyN[item.id]);}
-          else storyN[item.id]=0;
+          if(p&&Array.isArray(p.b)){pageCache[item.id]=finishPage(item.id,p.b);storyN[item.id]=countStories(p.b);delete failedN[item.id];cachePut(item.id,item.e,storyN[item.id]);}
+          else {storyN[item.id]=0;failedN[item.id]=1;}
         });
         progress(g.length);
       })
-      .catch(function(err){if(err.message==="auth")throw err;g.forEach(function(item){storyN[item.id]=0;});progress(g.length);});
+      .catch(function(err){if(err.message==="auth")throw err;g.forEach(function(item){storyN[item.id]=0;failedN[item.id]=1;});progress(g.length);});
   }
   function next(){
     if(my!==reqId||!groups.length) return;
@@ -3146,15 +3160,17 @@ function load(){
   api({from:range.from,to:range.to,token:auth.token},60000)
     .then(function(d){
       if(my!==reqId) return;
-      var rows=d.rows||[], missing=[]; lastProps=d.props||null;
+      var rows=d.rows||[], missing=[]; lastProps=d.props||null; lastRows=rows;
       var vw=document.getElementById("verWarn");
-      if(d.v!==SCRIPT_VERSION){vw.style.display="";vw.innerHTML="⚠ Ishlab turgan Apps Script <b>eski versiyada</b>"+(d.v?" ("+esc(d.v)+")":"")+". Kod saqlangan bo'lsa ham, veb-ilova o'zgarmaydi: <b>Начать развертывание → Управление развертываниями → ✏️ → Версия: Новая версия → Развернуть</b>. Keyin ⟳ ni bosing.";}
-      else vw.style.display="none";
+      var notes=[];
+      if(d.v!==SCRIPT_VERSION) notes.push("⚠ Ishlab turgan Apps Script <b>eski versiyada</b>"+(d.v?" ("+esc(d.v)+")":"")+". Kod saqlangan bo'lsa ham, veb-ilova o'zgarmaydi: <b>Начать развертывание → Управление развертываниями → ✏️ → Версия: Новая версия → Развернуть</b>. Keyin ⟳ ni bosing.");
+      if(loginViaGet) notes.push("⚠ Apps Script'da <b>doPost</b> yo'q, shuning uchun parol URL orqali yuborildi. Skriptga <code>function doPost(e){return doGet({parameter:JSON.parse(e.postData.contents||\"{}\")});}</code> qo'shib, yangi versiya chiqaring.");
+      vw.innerHTML=notes.join("<br>");vw.style.display=notes.length?"":"none";
       rows.forEach(function(r){
         if(!r.id) return;
-        if(Array.isArray(r.b)){pageCache[r.id]=finishPage(r.id,r.b);storyN[r.id]=countStories(r.b);cachePut(r.id,r.e,storyN[r.id]);return;}
+        if(Array.isArray(r.b)){pageCache[r.id]=finishPage(r.id,r.b);storyN[r.id]=countStories(r.b);delete failedN[r.id];cachePut(r.id,r.e,storyN[r.id]);return;}
         var c=cacheGet(r);
-        if(c!=null){storyN[r.id]=c;return;}
+        if(c!=null){storyN[r.id]=c;delete failedN[r.id];return;}
         var m=memCache[r.id];
         if(!r.e&&m&&Date.now()-m.t<300000){storyN[r.id]=m.n;return;}
         delete storyN[r.id];missing.push({id:r.id,e:r.e||""});
