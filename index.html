@@ -2884,6 +2884,8 @@ function buildDays(rows){
 function sumN(a){return a.reduce(function(s,x){return s+(x.n||0);},0);}
 function pendingN(a){return a.some(function(x){return x.n==null;});}
 function fmtN(a){return sumN(a)+(pendingN(a)?"…":"");}
+/* Reja sahifasida hali "1-story" qatorlari yozilmagan bo'lsa, "0 story" o'rniga rejalar sonini ko'rsatamiz. */
+function planTxt(a){return (sumN(a)||pendingN(a))?fmtN(a)+" ta story":a.length+" ta sahifa";}
 function flat(k){return [].concat.apply([],days.map(function(d){return d[k];}));}
 
 /* ---------- render ---------- */
@@ -2903,10 +2905,10 @@ function renderMetrics(){
     '<div class="mc"><div class="mv no">'+fmtN(sot)+'</div><div class="ml">Sotuv story'+(noCat?'<br><span style="color:var(--pl-tx)">⚠ '+noCat+' ta qatorda kategoriya o\'qilmadi</span>':'')+'</div></div>'+
     '<div class="mc"><div class="mv '+(interN||pendingN(inter)?"ac":"pl")+'">'+fmtN(inter)+'</div><div class="ml">Interaktiv story</div></div>'+
     '<div class="mc"><div class="mv ok">'+fmtN(all)+'</div><div class="ml">Joylangan story'+(failed?'<br><span style="color:var(--no-tx)">⚠ '+failed+' ta sahifa yuklanmadi — ⟳</span>':'')+'</div></div>';
-  document.getElementById("planInfo").textContent=planList.length?("Rejada (hali joylanmagan): "+fmtN(planList)+" ta story"):"";
+  document.getElementById("planInfo").textContent=planList.length?("Rejada (hali joylanmagan): "+planTxt(planList)):"";
   document.getElementById("hActive").textContent=elapsed?Math.round(active/elapsed*100)+"%":"—";
   document.getElementById("hTotal").textContent=fmtN(all);
-  document.getElementById("hPlan").innerHTML=planList.length?'<span class="hdot d-warn"></span>'+fmtN(planList)+' reja':'';
+  document.getElementById("hPlan").innerHTML=planList.length?'<span class="hdot d-warn"></span>reja: '+planTxt(planList):'';
 }
 
 function dayCard(d,i){
@@ -2923,7 +2925,7 @@ function dayCard(d,i){
   } else if(d.past||d.today){
     inner+='<div class="cnt">'+(d.today?'hali yo\'q':'joylanmadi')+'</div>';
   }
-  if(d.plans.length) inner+='<span class="sc plan">Reja: '+fmtN(d.plans)+' story</span>';
+  if(d.plans.length) inner+='<span class="sc plan">Reja: '+planTxt(d.plans)+'</span>';
   return '<div class="'+cls+'" data-i="'+i+'">'+inner+'</div>';
 }
 
@@ -3026,7 +3028,7 @@ function renderDetail(){
   if(d.posted.length){icon="✓";bg="var(--ok-bg)";}
   else if(d.past){icon="!";bg="var(--no-bg)";}
   else {icon="📅";bg="var(--acc-soft)";}
-  sub=fmtN(d.posted)+' ta story joylangan'+(d.plans.length?', '+fmtN(d.plans)+' ta story rejada':'');
+  sub=fmtN(d.posted)+' ta story joylangan'+(d.plans.length?', rejada: '+planTxt(d.plans):'');
   if(!d.stories.length) sub=d.today?'Bugun hali story joylanmagan':(d.past?'Hech narsa joylanmagan':'Bu kunga reja yo\'q');
   var head='<div class="dh"><div class="di" style="background:'+bg+';color:'+(d.posted.length?'var(--ok-tx)':d.past?'var(--no-tx)':'var(--acc)')+';font-weight:700">'+icon+'</div>'+
     '<div><div class="dt">'+d.label+(d.today?' — Bugun':'')+'</div><div class="ds">'+sub+'</div></div></div>';
@@ -3038,7 +3040,7 @@ function renderDetail(){
     if(sot.length) badges+='<span class="warn">'+fmtN(sot)+' ta sotuv story</span>';
     badges+=inter?'<span class="good">Interaktiv bor</span>':'<span class="bad">Interaktiv yo\'q</span>';
   }
-  if(d.past&&d.plans.length) badges+='<span class="bad">'+fmtN(d.plans)+' ta story rejasi bajarilmagan</span>';
+  if(d.past&&d.plans.length) badges+='<span class="bad">'+planTxt(d.plans)+' bajarilmagan</span>';
   box.innerHTML=head+d.stories.map(tgHtml).join("")+(badges?'<div class="badges">'+badges+'</div>':'');
   box.querySelectorAll(".tg-h").forEach(function(h){h.onclick=function(){toggleStory(h.parentNode);};});
 }
