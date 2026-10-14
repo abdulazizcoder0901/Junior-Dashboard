@@ -2599,6 +2599,17 @@ body{background:var(--page) !important}
 .sbox-h .dt{margin-right:auto}
 .sbox-h .ds{font-size:11px}
 @media (max-width:900px){.smetrics{grid-template-columns:repeat(3,1fr)}}
+.advice{margin-top:14px;padding-top:12px;border-top:0.5px solid var(--card-bd)}
+.ad-h{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ad-v{font-size:12px;font-weight:500;padding:2px 10px;border-radius:12px;background:var(--page);border:0.5px solid var(--card-bd)}
+.ad-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ad-t{font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.advice ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.advice li{display:flex;gap:10px;padding:9px 11px;border-radius:10px;background:var(--page);border:0.5px solid var(--card-bd);font-size:13px;line-height:1.5;color:var(--txt2)}
+.advice li b{color:var(--txt);font-weight:600}
+.ad-i{flex:none;font-size:15px}
+.ad-a{margin-top:2px}
+@media (max-width:900px){.ad-cols{grid-template-columns:1fr}}
 .empty{padding:12px;border-radius:8px;background:var(--page);border:0.5px solid var(--card-bd);font-size:13px;color:var(--txt2)}
 #login{position:fixed;inset:0;background:var(--page);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 #login.hide{display:none}
@@ -2992,7 +3003,9 @@ function blocksToHtml(blocks){
   return {html:out,count:count};
 }
 
+var pageTxt={}; /* story matni (xulosa uchun: poll, CTA bor-yo'qligi) */
 function finishPage(id,blocks){
+  pageTxt[id]=(blocks||[]).map(function(b){return b.text||"";}).join("\n");
   var r=blocksToHtml(blocks);
   r.html+='<a class="open-n" href="https://www.notion.so/'+id.replace(/-/g,"")+'" target="_blank" rel="noopener">Notion\'da ochish ↗</a>';
   return r;
@@ -3068,7 +3081,121 @@ function renderSheet(){
     tile(pct==null?"—":pct.toFixed(2).replace(".",",")+"%","Obunachilar ko'rgani"+(calc?'<br><span style="opacity:.7">1-story ÷ obunachi</span>':""),"ac")+
     tile(nf(r.leads),"Lidlar","pl")+
     tile(nf(r.subs),"Yangi obuna (fakt)","ok")+
-  '</div>';
+  '</div>'+adviceHtml(d,r);
+}
+
+/* ---------- Kunlik xulosa: storymaker tavsiyalari (qoidalar asosida) ---------- */
+var INTER_RE=/poll|so['‘’ʻ`]?rovnoma|savol|quiz|viktorina|slider|emoji|ovoz ber|test/i;
+var CTA_RE=/sotuv|bepul|sinov|chegirma|yozil|ro['‘’ʻ`]?yxat|link|havola|direct|chegirm|420|joy qoldi/i;
+function pctTxt(v,dg){return v==null?"—":v.toFixed(dg==null?0:dg).replace(".",",")+"%";}
+function avgOf(a){a=a.filter(function(x){return x!=null&&!isNaN(x);});return a.length?a.reduce(function(s,x){return s+x;},0)/a.length:null;}
+function periodStats(){
+  var rows=Object.keys(sheetBy).filter(function(k){return k>=range.from&&k<=range.to;}).map(function(k){return sheetBy[k];});
+  return {
+    first:avgOf(rows.map(function(r){return r.first||null;})),
+    ret:avgOf(rows.map(function(r){return r.first&&r.last?r.last/r.first*100:null;})),
+    reach:avgOf(rows.map(function(r){return r.first&&r.followers?r.first/r.followers*100:null;})),
+    leads:avgOf(rows.filter(function(r){return r.first;}).map(function(r){return r.leads==null?null:r.leads;})),
+    lpk:avgOf(rows.map(function(r){return r.first&&r.leads!=null?r.leads/r.first*1000:null;})),
+    n:rows.filter(function(r){return r.first;}).length
+  };
+}
+function adviceHtml(d,r){
+  var A=periodStats(),reach=[],lead=[],score=0,checks=0;
+  var posted=d.posted,n=sumN(posted);
+  var txt=posted.map(function(s){return pageTxt[s.id]||"";}).join("\n");
+  var hasInter=posted.some(function(s){return hasCat(s,"interaktiv");})||INTER_RE.test(txt);
+  var hasSale=posted.some(function(s){return hasCat(s,"sotuv");})||CTA_RE.test(txt);
+  var prevIso=iso(addDays(parse(d.iso),-1)),prev=sheetBy[prevIso];
+  var prevDay=days.filter(function(x){return x.iso===prevIso;})[0];
+  var prevNone=!!prevDay&&!prevDay.posted.length;
+  var prevInter=prevDay&&!prevNone?prevDay.posted.some(function(s){return hasCat(s,"interaktiv")||INTER_RE.test(pageTxt[s.id]||"");}):null;
+  function item(icon,title,act){return '<li><span class="ad-i">'+icon+'</span><div><b>'+title+'</b><div class="ad-a">'+act+'</div></div></li>';}
+  function vs(v,a){if(v==null||a==null||!a)return null;return (v-a)/a*100;}
+
+  if(r.first==null){
+    return '<div class="advice"><div class="ad-h">🧠 Kunlik xulosa</div><div class="empty">Bu kun uchun 1-story ko\'rishlari jadvalga kiritilmagan — xulosa uchun Sheets\'ni to\'ldiring.</div></div>';
+  }
+  var ret=r.last!=null?r.last/r.first*100:null;
+  var rch=r.pct!=null?r.pct:(r.followers?r.first/r.followers*100:null);
+  var dFirst=vs(r.first,A.first);
+
+  /* --- 1-story oxvati --- */
+  checks++;
+  if(dFirst!=null&&dFirst<=-10){
+    var why=prevNone?"Kecha story joylanmagan — uzilish tomoshabinlarning har kungi odatini buzadi, har kuni joylash muhim. ":prevInter===false?"Kecha interaktiv story bo'lmagan — Instagram faollik signali kam akkauntni ertasi kuni kamroq ko'rsatadi. ":"";
+    reach.push(item("📉","1-story: "+nf(r.first)+" — davr o'rtachasidan "+Math.round(-dFirst)+"% past",
+      why+"1-story — bu \"muqova\": birinchi 1 soniyada yuz, harakat yoki ota-onaning og'rig'iga tegadigan savol bo'lsin (masalan, \"Farzandingiz kuniga necha soat telefonda?\"). Faqat logotip yoki stok video bilan boshlamang. Auditoriya eng faol bo'ladigan vaqtni Instagram Insights'dan qarab, 1-story'ni aynan shu vaqtda joylang."));
+  } else if(dFirst!=null&&dFirst>=10){
+    score++;
+    reach.push(item("📈","1-story: "+nf(r.first)+" — o'rtachadan "+Math.round(dFirst)+"% yuqori",
+      "Bugungi ochilish ishladi. 1-kadr formatini va joylash vaqtini yozib qo'ying, ertaga takrorlang."+(prevInter?" Kechagi interaktiv story ham bugungi oxvatga yordam bergan bo'lishi mumkin.":"")));
+  } else if(dFirst!=null){
+    score+=0.5;
+    reach.push(item("➖","1-story: "+nf(r.first)+" — o'rtacha daraja ("+nf(A.first)+")",
+      "O'rtachadan yuqoriga chiqish uchun: 1-story'da yuz va savol, kecha poll yoki slider bo'lsin — interaktiv story'ga javob berganlar ertasi kuni story'ni birinchilardan ko'radi."));
+  }
+  if(rch!=null) reach.push(item("👥","Obunachilarning "+pctTxt(rch,2)+" qismi ko'rgan"+(A.reach!=null?" (davr o'rtachasi "+pctTxt(A.reach,2)+")":""),
+    "Story'ni asosan faol obunachilar ko'radi. Ularni ko'paytirish uchun haftada 2–3 marta \"Direct'ga yozing\" yoki savol stikeri bilan suhbat boshlang — muloqot qilgan obunachilarga story yuqorida chiqadi."));
+
+  /* --- oxirgi story'gacha ushlab qolish --- */
+  if(ret!=null){
+    checks++;
+    var per=n>1?(1-Math.pow(r.last/r.first,1/(n-1)))*100:null;
+    var perTxt=per!=null?" (har story'da ~"+Math.round(per)+"% tomoshabin chiqib ketgan)":"";
+    if(ret<50){
+      reach.push(item("🚪","Oxirgi story'gacha "+pctTxt(ret)+" yetib kelgan"+perTxt,
+        (n>6?"Story soni ko'p ("+n+" ta) — bitta mavzu uchun 4–6 ta yetadi. ":"")+
+        "O'rtadagi story'lar bir-birini takrorlamasin: har birida yangi ma'lumot yoki savol bo'lsin. 2–3-story'ga poll qo'ying va \"davomi keyingi story'da 👉\" kabi ilgak bilan tugating. Matnni 1–2 qator bilan cheklang, video 7–10 soniya bo'lsin."));
+    } else if(ret>=65){
+      score++;
+      reach.push(item("🔗","Ushlab qolish yaxshi: "+pctTxt(ret)+" oxirigacha ko'rgan"+perTxt,
+        "Ketma-ketlik ishladi. Shu tuzilmani shablon qiling: ilgak → foydali ma'lumot → interaktiv → taklif."));
+    } else {
+      score+=0.5;
+      reach.push(item("🔗","Oxirigacha "+pctTxt(ret)+" ko'rgan"+(A.ret!=null?" (o'rtacha "+pctTxt(A.ret)+")":"")+perTxt,
+        "Eng ko'p tomoshabin yo'qotilgan story'ni Insights'da (\"Exits\" / \"Next story\") toping va shu formatni qisqartiring yoki olib tashlang."));
+    }
+  }
+  if(posted.length&&!hasInter) reach.push(item("📊","Interaktiv element yo'q",
+    "Poll, quiz, slider yoki savol stikerini qo'shing. Ularga javob bergan odamlar Instagram'da siz bilan \"yaqin\" hisoblanadi va keyingi story'laringizni oldinroq ko'radi — bu ertangi 1-story oxvatini ko'tarishga yordam beradi. Ota-onalar uchun misol: \"Farzandingiz qaysi yo'nalishga qiziqadi? Dizayn / Dasturlash\"."));
+
+  /* --- lidlar --- */
+  var lpk=r.leads!=null&&r.first?r.leads/r.first*1000:null;
+  if(r.leads==null){
+    lead.push(item("✏️","Lidlar soni kiritilmagan","Xulosa aniq bo'lishi uchun kun oxirida CRM'dan story lidlarini jadvalga yozing."));
+  } else {
+    checks++;
+    if(r.leads===0){
+      lead.push(item("🎯","Bugun lid tushmagan",
+        hasSale?"Sotuv story bor, lekin harakatga chaqiriq (CTA) ishlamagan. Taklifni aniq qiling: \"Bepul sinov darsiga yoziling\" + link stikeri yoki \"Direct'ga IT deb yozing\". Taklifni faqat oxirgi story'ga qo'ymang — u yerga eng kam odam yetib keladi; 3-story'da ham bering.":
+        "Bugun sotuv yoki CTA story bo'lmagan — lid kelmasligi tabiiy. Har kuni kamida bitta yumshoq CTA bering: \"Farzandingiz uchun bepul sinov darsi — link stikerda\"."));
+    } else if(A.lpk!=null&&lpk<A.lpk*0.85){
+      lead.push(item("🎯",r.leads+" ta lid — har 1000 ko'rishga "+lpk.toFixed(1).replace(".",",")+" (o'rtacha "+A.lpk.toFixed(1).replace(".",",")+")",
+        "Konversiya o'rtachadan past. Taklifdan oldin ishonch bering: ota-ona otzivi yoki o'quvchining real ishi (u yaratgan sayt yoki dizayn), keyin taklif. Taklifga muddat qo'shing: \"Bugun 21:00 gacha yozilganlarga 420 000 so'm\"."));
+    } else {
+      score++;
+      lead.push(item("🔥",r.leads+" ta lid"+(lpk!=null?" — har 1000 ko'rishga "+lpk.toFixed(1).replace(".",","):"")+(A.lpk!=null?" (o'rtacha "+A.lpk.toFixed(1).replace(".",",")+")":""),
+        "Yaxshi natija. Bugungi taklif matnini va qaysi story'da berilganini saqlab qo'ying — ertaga boshqa mavzuda aynan shu CTA'ni sinang."));
+    }
+  }
+  if(r.leads!=null&&posted.length){
+    if(!hasSale&&r.leads>0) lead.push(item("💡","Lid sotuv story'siz kelgan","Demak auditoriya qiziqyapti. Ertaga yumshoq CTA qo'shsangiz, lid soni ko'payishi mumkin."));
+    if(hasSale&&!posted.some(function(s){return /otziv|natija|ota-ona|onasi|otasi|o'quvchi|o‘quvchi/i.test((pageTxt[s.id]||"")+" "+s.t);}))
+      lead.push(item("🤝","Sotuvdan oldin ijtimoiy isbot yo'q","Ota-onalar boshqa ota-onaga ishonadi: taklifdan oldin bitta qisqa ota-ona otzivi yoki \"2000+ o'quvchi\" kabi raqam qo'ying. Kurator nazorati haqida bir jumla — \"pul behuda ketadimi?\" qo'rquvini yopadi."));
+  }
+  if(r.subs!=null&&prev&&prev.followers!=null&&r.followers!=null){
+    var df=r.followers-prev.followers;
+    if(df>0) lead.push(item("➕","Obunachilar kechagidan +"+nf(df)+", fakt obuna: "+nf(r.subs),"Yangi obunachilarni isitish uchun ertaga \"Biz kimmiz\" story'si (kurator, ustozlar, natijalar) va bepul sinov taklifini bering."));
+  }
+
+  var verdict=checks?score/checks:0;
+  var vTxt=verdict>=0.75?["🟢","Kuchli kun"]:verdict>=0.4?["🟡","O'rtacha kun"]:["🔴","Zaif kun"];
+  var meta=(n?n+" ta story":"Story joylanmagan")+" · "+(hasInter?"interaktiv bor":"interaktiv yo'q")+" · "+(hasSale?"CTA bor":"CTA yo'q")+(A.n?" · o'rtacha "+A.n+" kunlik jadval ma'lumotidan":"");
+  return '<div class="advice"><div class="ad-h">🧠 Kunlik xulosa <span class="ad-v">'+vTxt[0]+' '+vTxt[1]+'</span></div>'+
+    '<div class="ds" style="margin:-4px 0 10px">'+meta+'</div>'+
+    '<div class="ad-cols"><div><div class="ad-t">📈 Oxvatni oshirish (1-story → oxirgi story)</div><ul>'+reach.join("")+'</ul></div>'+
+    '<div><div class="ad-t">🎯 Lidlarni oshirish</div><ul>'+(lead.join("")||'<li class="muted">Ma\'lumot yetarli emas</li>')+'</ul></div></div></div>';
 }
 function loadSheet(my){
   sheetState="loading";renderSheet();
