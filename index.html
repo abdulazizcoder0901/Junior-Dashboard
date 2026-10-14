@@ -3360,8 +3360,10 @@ function fetchCounts(list,my,rows){
   next();next();
 }
 
+var firstLoad=true; /* sahifa ochilganda/yangilanganda (F5, ⌘R) birinchi so'rov keshsiz — xuddi ⟳ kabi */
 function load(fresh){
   if(!auth) return;
+  if(firstLoad){fresh=true;firstLoad=false;}
   var key=range.from+"_"+range.to,my=++reqId;
   setConn("","Yuklanmoqda…");startProg();
   var q={from:range.from,to:range.to,token:auth.token,db:MODE};if(fresh)q.fresh=1;
