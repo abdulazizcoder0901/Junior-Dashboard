@@ -2717,17 +2717,17 @@ var MSHORT=["yan","fev","mar","apr","may","iyn","iyl","avg","sen","okt","noy","d
 
 var range={from:null,to:null,preset:"week"}, selIdx=null, days=[], loadedKey=null, reqId=0, nextAt=null, timer=null;
 var auth=null, pageCache={}, openSet={}, storyN={}, failedN={}, lastRows=[], lastProps=null;
-var STORY_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис)|stor(y|is)\s*[-–#]?\s*\d+)/i;
 /* Notion'da story'lar ko'pincha bitta blok ichida Shift+Enter bilan yoziladi — har bir qatorni alohida tekshiramiz. */
 /* Qator ichida "… 5-story …" kelsa ham (Enter bosilmagan bo'lsa) shu joydan yangi qatorga ajratamiz. */
-var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис))/i;
+var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис|post\b|пост))/i;
 function textLines(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){out.push.apply(out,l.split(STORY_SPLIT));});return out;}
 /* ---------- Rejim: Junior Story (Instagram) / Junior TG (Telegram) ---------- */
 var MODES={story:{title:"Junior Story Dashboard",unit:"story",Unit:"Story"},tg:{title:"Junior TG Dashboard",unit:"post",Unit:"Post"}};
 var MODE=(function(){try{var m=JSON.parse(localStorage.getItem("jsd_mode")||'"story"');return MODES[m]?m:"story";}catch(e){return "story";}})();
-var POST_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(post|пост)|post\s*[-–#]?\s*\d+)/i;
+/* Ikkala bo'limda ham "1-story" va "1-post" qatorlari sanaladi — Notion'da qaysi so'z yozilganining farqi yo'q. */
+var UNIT_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис|post|пост)|(stor(y|is)|post)\s*[-–#]?\s*\d+)/i;
 function U(){return MODES[MODE].unit;}
-function unitRe(){return MODE==="tg"?POST_RE:STORY_RE;}
+function unitRe(){return UNIT_RE;}
 /* TG'da sahifada "1-post" qatorlari bo'lmasa, Notion qatorining o'zi bitta post hisoblanadi. */
 function unitCount(n){return MODE==="tg"?Math.max(1,n):n;}
 function countStories(blocks){var n=0;(blocks||[]).forEach(function(x){textLines(x.text).forEach(function(l){if(unitRe().test(l))n++;});});return unitCount(n);}
@@ -3311,12 +3311,14 @@ function stopTimer(){clearInterval(progTimer);progTimer=null;}
 
 /* --- story sonlari keshi (sahifa o'zgarmasa qayta yuklanmaydi) --- */
 store("jsd_cnt",null); /* eski (noto'g'ri sanalgan) kesh */
-var cntCache=read("jsd_cnt2")||{};
-function cacheGet(r){var c=cntCache[r.id];return (c&&r.e&&c.e===r.e)?c.n:null;}
+store("jsd_cnt2",null); /* eski kesh bo'limlarni ajratmagan */
+var cntCache=read("jsd_cnt3")||{};
+function ck(id){return MODE+":"+id;}   /* sonlar har bo'lim (story/tg) uchun alohida */
+function cacheGet(r){var c=cntCache[ck(r.id)];return (c&&r.e&&c.e===r.e)?c.n:null;}
 function cachePut(id,e,n){
-  if(!e) return; cntCache[id]={e:e,n:n};
+  if(!e) return; cntCache[ck(id)]={e:e,n:n};
   var keys=Object.keys(cntCache); if(keys.length>800){keys.slice(0,keys.length-800).forEach(function(k){delete cntCache[k];});}
-  store("jsd_cnt2",cntCache);
+  store("jsd_cnt3",cntCache);
 }
 var memCache={}; /* eski skript uchun: 5 daqiqa xotirada */
 
@@ -3335,7 +3337,7 @@ function fetchCounts(list,my,rows){
   }
   function single(item){
     return api({action:"page",id:item.id,db:MODE,token:auth?auth.token:""})
-      .then(function(d){pageCache[item.id]=finishPage(item.id,d.blocks);var n=countStories(d.blocks);storyN[item.id]=n;delete failedN[item.id];memCache[item.id]={t:Date.now(),n:n};})
+      .then(function(d){pageCache[item.id]=finishPage(item.id,d.blocks);var n=countStories(d.blocks);storyN[item.id]=n;delete failedN[item.id];memCache[ck(item.id)]={t:Date.now(),n:n};})
       .catch(function(){storyN[item.id]=0;failedN[item.id]=1;});
   }
   function runGroup(g){
@@ -3369,6 +3371,8 @@ function load(){
   api(q,60000)
     .then(function(d){
       if(my!==reqId) return;
+      /* Eski Apps Script `db` ni bilmaydi va TG o'rniga Story bazasini qaytaradi — uni TG deb ko'rsatmaymiz. */
+      if(MODE==="tg"&&!(String(d.v||"")>="2026-10-15-v8")) throw new Error("Apps Script eski versiyada ("+(d.v||"?")+") va Telegram bazasini o'qiy olmaydi. Yangi kodni joylab, Новая версия chiqaring");
       var rows=d.rows||[], missing=[]; lastProps=d.props||null; lastRows=rows;
       var vw=document.getElementById("verWarn");
       var notes=[];
@@ -3380,7 +3384,7 @@ function load(){
         if(Array.isArray(r.b)){pageCache[r.id]=finishPage(r.id,r.b);storyN[r.id]=countStories(r.b);delete failedN[r.id];cachePut(r.id,r.e,storyN[r.id]);return;}
         var c=cacheGet(r);
         if(c!=null){storyN[r.id]=c;delete failedN[r.id];return;}
-        var m=memCache[r.id];
+        var m=memCache[ck(r.id)];
         if(!r.e&&m&&Date.now()-m.t<300000){storyN[r.id]=m.n;return;}
         delete storyN[r.id];missing.push({id:r.id,e:r.e||""});
       });
