@@ -2592,6 +2592,13 @@ body{background:var(--page) !important}
 .bad{background:var(--no-bg) !important;color:var(--no-tx) !important}
 .issue{background:var(--card) !important;border:0.5px solid var(--card-bd) !important;border-radius:12px !important}
 .i-title{color:var(--txt) !important}.i-desc{color:var(--txt2) !important}
+.smetrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.smetrics .mc{padding:10px 6px !important}
+.smetrics .ml{line-height:1.35}
+.sbox-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.sbox-h .dt{margin-right:auto}
+.sbox-h .ds{font-size:11px}
+@media (max-width:900px){.smetrics{grid-template-columns:repeat(3,1fr)}}
 .empty{padding:12px;border-radius:8px;background:var(--page);border:0.5px solid var(--card-bd);font-size:13px;color:var(--txt2)}
 #login{position:fixed;inset:0;background:var(--page);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 #login.hide{display:none}
@@ -2668,6 +2675,7 @@ body{background:var(--page) !important}
   <div class="sub" id="planInfo"></div>
   <div id="cal"></div>
   <div class="detail-box" id="dbox"><div class="empty">Notion'dan ma'lumot olinmoqda…</div></div>
+  <div class="detail-box" id="sbox"></div>
 </div>
 
 <div id="issues" class="panel">
@@ -2678,7 +2686,7 @@ body{background:var(--page) !important}
 var PREVIEW=false; /* true: Claude linki uchun namunaviy ma'lumot rejimi */
 var API="https://script.google.com/macros/s/AKfycbwddXHY3fgRY1youlZDrqb7i3-YCmZ_Mr6HcoPJziVm1l6J9jqs2x3ZMtDR5tFW48nk/exec";
 var REFRESH_MS=120000;
-var SCRIPT_VERSION="2026-10-09-v5";
+var SCRIPT_VERSION="2026-10-14-v6";
 
 var lbl={oxvat:"Oxvat",sotuv:"Sotuv",malumot:"Ma'lumot",foydali:"Foydali",interaktiv:"Interaktiv",other:"Boshqa"};
 var CAT={"oxvat":"oxvat","sotuv":"sotuv","ma'lumot":"malumot","malumot":"malumot","foydali":"foydali","interaktiv":"interaktiv"};
@@ -2748,6 +2756,7 @@ function demoApi(p){
   return new Promise(function(res){setTimeout(function(){
     if(p.action==="logout") return res({ok:true});
     if(p.action==="page") return res({ok:true,blocks:D.blocks[p.id]||[]});
+    if(p.action==="sheet"){var sr=[],f=203463;for(var dd=parse(p.from);iso(dd)<=p.to;dd=addDays(dd,1)){if(iso(dd)>iso(today0()))break;var a=900+Math.floor(Math.random()*1500);sr.push({d:iso(dd),followers:f+=Math.floor(Math.random()*300),first:a,last:Math.floor(a*0.5),pct:null,leads:Math.floor(Math.random()*12),subs:Math.floor(Math.random()*7)});}return res({ok:true,cols:{},rows:sr});}
     if(p.action==="pages"){var out={};String(p.ids).split(",").forEach(function(id){out[id]={b:D.blocks[id]||[]};});return res({ok:true,pages:out});}
     res({ok:true,v:SCRIPT_VERSION,props:{Nomi:"title",Sana:"date",Kategoriya:"multi_select",Holat:"select"},
       rows:D.rows.filter(function(r){return r.d>=p.from&&r.d<=p.to;})});
@@ -3011,6 +3020,7 @@ function toggleStory(el){
 
 function renderDetail(){
   var d=days[selIdx],box=document.getElementById("dbox");
+  renderSheet();
   if(!d){box.innerHTML="";return;}
   var icon,bg,sub;
   if(d.posted.length){icon="✓";bg="var(--ok-bg)";}
@@ -3031,6 +3041,43 @@ function renderDetail(){
   if(d.past&&d.plans.length) badges+='<span class="bad">'+fmtN(d.plans)+' ta story rejasi bajarilmagan</span>';
   box.innerHTML=head+d.stories.map(tgHtml).join("")+(badges?'<div class="badges">'+badges+'</div>':'');
   box.querySelectorAll(".tg-h").forEach(function(h){h.onclick=function(){toggleStory(h.parentNode);};});
+}
+
+/* ---------- Google Sheets: Instagram statistika ---------- */
+var sheetBy={},sheetState="idle",sheetMsg="",sheetCols=null;
+function nf(v){return v==null?"—":Math.round(v).toLocaleString("ru-RU");}
+function renderSheet(){
+  var box=document.getElementById("sbox"),d=days[selIdx];
+  if(!box) return;
+  if(!d){box.innerHTML="";return;}
+  var head='<div class="sbox-h"><div class="dt">📊 Instagram statistika — '+d.label+'</div><div class="ds">Google Sheets</div></div>';
+  if(sheetState==="loading"&&!sheetBy[d.iso]){box.innerHTML=head+'<div class="empty">Google Sheets\'dan olinmoqda…</div>';return;}
+  if(sheetState==="old"){box.innerHTML=head+'<div class="empty">Apps Script hali Sheets\'ni o\'qimaydi: <b>sheet-stats</b> kodini qo\'shib, yangi versiya chiqaring.</div>';return;}
+  if(sheetState==="err"){box.innerHTML=head+'<div class="empty">Google Sheets\'dan olib bo\'lmadi: '+esc(sheetMsg)+'<br>Apps Script\'dagi <b>SHEET_URL</b> to\'g\'ri qo\'yilganini va jadval skript egasiga ochiq ekanini tekshiring.</div>';return;}
+  var r=sheetBy[d.iso];
+  if(!r){box.innerHTML=head+'<div class="empty">Jadvalda bu sana uchun «Stories» qatori yo\'q.</div>';return;}
+  var pct=r.pct,calc=false;
+  if(pct==null&&r.first!=null&&r.followers){pct=r.first/r.followers*100;calc=true;}
+  function tile(v,l,cls){return '<div class="mc"><div class="mv'+(cls?" "+cls:"")+'">'+v+'</div><div class="ml">'+l+'</div></div>';}
+  box.innerHTML=head+'<div class="smetrics">'+
+    tile(nf(r.followers),"Obunachilar soni")+
+    tile(nf(r.first),"1-story ko'rishlar")+
+    tile(nf(r.last),"Oxirgi story ko'rishlar")+
+    tile(pct==null?"—":pct.toFixed(2).replace(".",",")+"%","Obunachilar ko'rgani"+(calc?'<br><span style="opacity:.7">1-story ÷ obunachi</span>':""),"ac")+
+    tile(nf(r.leads),"Lidlar","pl")+
+    tile(nf(r.subs),"Yangi obuna (fakt)","ok")+
+  '</div>';
+}
+function loadSheet(my){
+  sheetState="loading";renderSheet();
+  api({action:"sheet",from:range.from,to:range.to,token:auth?auth.token:""})
+    .then(function(d){
+      if(my!==reqId) return;
+      if(!d.cols){sheetState="old";sheetBy={};}
+      else{sheetBy={};(d.rows||[]).forEach(function(r){sheetBy[r.d]=r;});sheetCols=d.cols;sheetState="ok";}
+      renderSheet();
+    })
+    .catch(function(e){if(my!==reqId||e.message==="auth")return;sheetState="err";sheetMsg=e.name==="AbortError"?"javob kelmadi":e.message;renderSheet();});
 }
 
 function issue(icon,title,desc,kind,tag){
@@ -3197,6 +3244,7 @@ function load(){
       document.getElementById("hUpd").textContent=hm(new Date());
       setConn("ok","Notion");
       schedule();
+      loadSheet(my);
       if(missing.length) fetchCounts(missing,my,rows); else setProg(100,"✓ 100%","done");
     })
     .catch(function(e){
