@@ -2610,6 +2610,10 @@ body{background:var(--page) !important}
 .ad-i{flex:none;font-size:15px}
 .ad-a{margin-top:2px}
 @media (max-width:900px){.ad-cols{grid-template-columns:1fr}}
+.modes{display:inline-flex;gap:4px;padding:4px;margin:4px 0 6px;border-radius:14px;background:var(--card);border:0.5px solid var(--card-bd)}
+#vis-container button.mode{padding:8px 18px !important;border-radius:10px !important;border:none !important;background:transparent !important;color:var(--txt2) !important;font-size:14px !important;font-weight:500;cursor:pointer;transform:none !important}
+#vis-container button.mode:hover{color:var(--txt) !important;background:var(--acc-soft) !important}
+#vis-container button.mode.active{background:var(--acc) !important;color:var(--acc-tx) !important}
 .empty{padding:12px;border-radius:8px;background:var(--page);border:0.5px solid var(--card-bd);font-size:13px;color:var(--txt2)}
 #login{position:fixed;inset:0;background:var(--page);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 #login.hide{display:none}
@@ -2627,7 +2631,7 @@ body{background:var(--page) !important}
 
 <div id="login">
   <form class="lg-card" id="lgForm" autocomplete="on">
-    <h2>Junior Story Dashboard</h2>
+    <h2>Junior Dashboard</h2>
     <p>Davom etish uchun tizimga kiring</p>
     <label for="lgUser">Login</label>
     <input id="lgUser" name="username" autocomplete="username" required>
@@ -2639,8 +2643,12 @@ body{background:var(--page) !important}
 </div>
 
 <div id="topbar"><i id="topbarFill"></i></div>
+<div class="modes" id="modes">
+  <button class="mode" data-m="story">📸 Junior Story</button>
+  <button class="mode" data-m="tg">✈️ Junior TG</button>
+</div>
 <div class="hdr">
-  <h1>Junior Story Dashboard</h1>
+  <h1 id="hTitle">Junior Story Dashboard</h1>
   <span class="rng" id="rngText">…</span>
   <div class="hstats">
     <span>Faol kunlar <b id="hActive">—</b></span>
@@ -2697,7 +2705,7 @@ body{background:var(--page) !important}
 var PREVIEW=false; /* true: Claude linki uchun namunaviy ma'lumot rejimi */
 var API="https://script.google.com/macros/s/AKfycbwddXHY3fgRY1youlZDrqb7i3-YCmZ_Mr6HcoPJziVm1l6J9jqs2x3ZMtDR5tFW48nk/exec";
 var REFRESH_MS=600000, REFRESH_HIDDEN_MS=900000; /* avtomatik yangilanish: tab ko'rinib tursa 10 daqiqa, fonda bo'lsa 15 daqiqa */
-var SCRIPT_VERSION="2026-10-15-v7";
+var SCRIPT_VERSION="2026-10-15-v8";
 
 var lbl={oxvat:"Oxvat",sotuv:"Sotuv",malumot:"Ma'lumot",foydali:"Foydali",interaktiv:"Interaktiv",other:"Boshqa"};
 var CAT={"oxvat":"oxvat","sotuv":"sotuv","ma'lumot":"malumot","malumot":"malumot","foydali":"foydali","interaktiv":"interaktiv"};
@@ -2714,7 +2722,15 @@ var STORY_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|�
 /* Qator ichida "… 5-story …" kelsa ham (Enter bosilmagan bo'lsa) shu joydan yangi qatorga ajratamiz. */
 var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис))/i;
 function textLines(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){out.push.apply(out,l.split(STORY_SPLIT));});return out;}
-function countStories(blocks){var n=0;(blocks||[]).forEach(function(x){textLines(x.text).forEach(function(l){if(STORY_RE.test(l))n++;});});return n;}
+/* ---------- Rejim: Junior Story (Instagram) / Junior TG (Telegram) ---------- */
+var MODES={story:{title:"Junior Story Dashboard",unit:"story",Unit:"Story"},tg:{title:"Junior TG Dashboard",unit:"post",Unit:"Post"}};
+var MODE=(function(){try{var m=JSON.parse(localStorage.getItem("jsd_mode")||'"story"');return MODES[m]?m:"story";}catch(e){return "story";}})();
+var POST_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(post|пост)|post\s*[-–#]?\s*\d+)/i;
+function U(){return MODES[MODE].unit;}
+function unitRe(){return MODE==="tg"?POST_RE:STORY_RE;}
+/* TG'da sahifada "1-post" qatorlari bo'lmasa, Notion qatorining o'zi bitta post hisoblanadi. */
+function unitCount(n){return MODE==="tg"?Math.max(1,n):n;}
+function countStories(blocks){var n=0;(blocks||[]).forEach(function(x){textLines(x.text).forEach(function(l){if(unitRe().test(l))n++;});});return unitCount(n);}
 
 /* ---------- helpers ---------- */
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -2896,7 +2912,7 @@ function sumN(a){return a.reduce(function(s,x){return s+(x.n||0);},0);}
 function pendingN(a){return a.some(function(x){return x.n==null;});}
 function fmtN(a){return sumN(a)+(pendingN(a)?"…":"");}
 /* Reja sahifasida hali "1-story" qatorlari yozilmagan bo'lsa, "0 story" o'rniga rejalar sonini ko'rsatamiz. */
-function planTxt(a){return (sumN(a)||pendingN(a))?fmtN(a)+" ta story":a.length+" ta sahifa";}
+function planTxt(a){return (sumN(a)||pendingN(a))?fmtN(a)+" ta "+U():a.length+" ta sahifa";}
 function flat(k){return [].concat.apply([],days.map(function(d){return d[k];}));}
 
 /* ---------- render ---------- */
@@ -2913,9 +2929,9 @@ function renderMetrics(){
   var failed=all.concat(planList).filter(function(s){return failedN[s.id];}).length;
   document.getElementById("metrics").innerHTML=
     '<div class="mc"><div class="mv">'+(elapsed?active+"/"+elapsed:"—")+'</div><div class="ml">Faol kunlar</div></div>'+
-    '<div class="mc"><div class="mv no">'+fmtN(sot)+'</div><div class="ml">Sotuv story'+(noCat?'<br><span style="color:var(--pl-tx)">⚠ '+noCat+' ta qatorda kategoriya o\'qilmadi</span>':'')+'</div></div>'+
-    '<div class="mc"><div class="mv '+(interN||pendingN(inter)?"ac":"pl")+'">'+fmtN(inter)+'</div><div class="ml">Interaktiv story</div></div>'+
-    '<div class="mc"><div class="mv ok">'+fmtN(all)+'</div><div class="ml">Joylangan story'+(failed?'<br><span style="color:var(--no-tx)">⚠ '+failed+' ta sahifa yuklanmadi — ⟳</span>':'')+'</div></div>';
+    '<div class="mc"><div class="mv no">'+fmtN(sot)+'</div><div class="ml">Sotuv '+U()+(noCat?'<br><span style="color:var(--pl-tx)">⚠ '+noCat+' ta qatorda kategoriya o\'qilmadi</span>':'')+'</div></div>'+
+    '<div class="mc"><div class="mv '+(interN||pendingN(inter)?"ac":"pl")+'">'+fmtN(inter)+'</div><div class="ml">Interaktiv '+U()+'</div></div>'+
+    '<div class="mc"><div class="mv ok">'+fmtN(all)+'</div><div class="ml">Joylangan '+U()+(failed?'<br><span style="color:var(--no-tx)">⚠ '+failed+' ta sahifa yuklanmadi — ⟳</span>':'')+'</div></div>';
   document.getElementById("planInfo").textContent=planList.length?("Rejada (hali joylanmagan): "+planTxt(planList)):"";
   document.getElementById("hActive").textContent=elapsed?Math.round(active/elapsed*100)+"%":"—";
   document.getElementById("hTotal").textContent=fmtN(all);
@@ -2930,7 +2946,7 @@ function dayCard(d,i){
   if(i===selIdx) cls+=" sel";
   var inner='<div class="dn">'+d.n+(d.today?' · bugun':'')+'</div><div class="dd">'+d.date+'</div>';
   if(d.posted.length){
-    inner+='<div class="cnt">✓ '+fmtN(d.posted)+' ta story</div>';
+    inner+='<div class="cnt">✓ '+fmtN(d.posted)+' ta '+U()+'</div>';
     var cats=[];d.posted.forEach(function(s){if(cats.indexOf(s.c)<0)cats.push(s.c);});
     inner+=cats.slice(0,2).map(function(c){return '<span class="sc s-'+c+'">'+lbl[c]+'</span>';}).join("");
   } else if(d.past||d.today){
@@ -2966,7 +2982,7 @@ function buildCal(){
 function tgHtml(s,i){
   var open=openSet[s.id]?" open":"";
   var cached=pageCache[s.id];
-  var cnt=s.n!=null?'<span class="chip cnt2">'+s.n+' ta story</span>':'';
+  var cnt=s.n!=null?'<span class="chip cnt2">'+s.n+' ta '+U()+'</span>':'';
   return '<div class="tg'+(s.plan?' plan':'')+open+'" data-id="'+esc(s.id||"")+'">'+
     '<div class="tg-h"><span class="tg-arrow">▶</span>'+
     '<span class="tg-num s-'+s.c+'">'+(i+1)+'</span>'+
@@ -2977,12 +2993,12 @@ function tgHtml(s,i){
 }
 
 function blocksToHtml(blocks){
-  if(!blocks||!blocks.length) return {html:'<span class="muted">Notion sahifasi bo\'sh — ichiga story matnini yozing.</span>',count:0};
+  if(!blocks||!blocks.length) return {html:'<span class="muted">Notion sahifasi bo\'sh — ichiga '+U()+' matnini yozing.</span>',count:unitCount(0)};
   var out="",list=null,count=0;
   function closeList(){if(list){out+="</ul>";list=null;}}
   blocks.forEach(function(b){
     var lines=textLines(b.text),t=lines.map(esc).join("<br>");
-    lines.forEach(function(l){if(STORY_RE.test(l))count++;});
+    lines.forEach(function(l){if(unitRe().test(l))count++;});
     var url=safeUrl(b.url);
     if(b.type==="bulleted_list_item"||b.type==="numbered_list_item"||b.type==="to_do"){
       if(!list){out+="<ul>";list=true;}
@@ -2994,13 +3010,13 @@ function blocksToHtml(blocks){
     else if(url) out+='<p><a href="'+esc(url)+'" target="_blank" rel="noopener">'+(t||b.type)+' ↗</a></p>';
     else if(b.type==="divider") out+='<hr style="border:none;border-top:0.5px solid var(--card-bd);margin:8px 0">';
     else if(t) lines.forEach(function(l){
-      if(STORY_RE.test(l)) out+='<div class="bh">'+esc(l)+'</div>';
+      if(unitRe().test(l)) out+='<div class="bh">'+esc(l)+'</div>';
       else if(l.trim()) out+='<p>'+esc(l)+'</p>';
     });
     else out+='<p style="height:6px"></p>';
   });
   closeList();
-  return {html:out,count:count};
+  return {html:out,count:unitCount(count)};
 }
 
 var pageTxt={}; /* story matni (xulosa uchun: poll, CTA bor-yo'qligi) */
@@ -3041,8 +3057,8 @@ function renderDetail(){
   if(d.posted.length){icon="✓";bg="var(--ok-bg)";}
   else if(d.past){icon="!";bg="var(--no-bg)";}
   else {icon="📅";bg="var(--acc-soft)";}
-  sub=fmtN(d.posted)+' ta story joylangan'+(d.plans.length?', rejada: '+planTxt(d.plans):'');
-  if(!d.stories.length) sub=d.today?'Bugun hali story joylanmagan':(d.past?'Hech narsa joylanmagan':'Bu kunga reja yo\'q');
+  sub=fmtN(d.posted)+' ta '+U()+' joylangan'+(d.plans.length?', rejada: '+planTxt(d.plans):'');
+  if(!d.stories.length) sub=d.today?'Bugun hali '+U()+' joylanmagan':(d.past?'Hech narsa joylanmagan':'Bu kunga reja yo\'q');
   var head='<div class="dh"><div class="di" style="background:'+bg+';color:'+(d.posted.length?'var(--ok-tx)':d.past?'var(--no-tx)':'var(--acc)')+';font-weight:700">'+icon+'</div>'+
     '<div><div class="dt">'+d.label+(d.today?' — Bugun':'')+'</div><div class="ds">'+sub+'</div></div></div>';
   if(!d.stories.length){box.innerHTML=head;return;}
@@ -3050,7 +3066,7 @@ function renderDetail(){
   var inter=catOf(d.posted,"interaktiv").length;
   var badges='';
   if(d.posted.length){
-    if(sot.length) badges+='<span class="warn">'+fmtN(sot)+' ta sotuv story</span>';
+    if(sot.length) badges+='<span class="warn">'+fmtN(sot)+' ta sotuv '+U()+'</span>';
     badges+=inter?'<span class="good">Interaktiv bor</span>':'<span class="bad">Interaktiv yo\'q</span>';
   }
   if(d.past&&d.plans.length) badges+='<span class="bad">'+planTxt(d.plans)+' bajarilmagan</span>';
@@ -3064,6 +3080,8 @@ function nf(v){return v==null?"—":Math.round(v).toLocaleString("ru-RU");}
 function renderSheet(){
   var box=document.getElementById("sbox"),d=days[selIdx];
   if(!box) return;
+  box.style.display=MODE==="story"?"":"none";   /* TG rejimida Sheets statistikasi yo'q */
+  if(MODE!=="story") return;
   if(!d){box.innerHTML="";return;}
   var head='<div class="sbox-h"><div class="dt">📊 Instagram statistika — '+d.label+'</div><div class="ds">Google Sheets</div></div>';
   if(sheetState==="loading"&&!sheetBy[d.iso]){box.innerHTML=head+'<div class="empty">Google Sheets\'dan olinmoqda…</div>';return;}
@@ -3232,7 +3250,7 @@ function renderIssues(){
   if(missed.length){
     bad++;
     var mons=missed.filter(function(d){return d.wd===0;}).length;
-    out.push(issue("🚫",missed.length+" kun story joylanmagan",
+    out.push(issue("🚫",missed.length+" kun "+U()+" joylanmagan",
       missed.map(function(d){return d.n+" "+d.date;}).join(", ")+(mons?"<br>Shundan "+mons+" tasi Dushanba — haftaning eng muhim savdo kuni.":""),"bad","O'tkazilgan kunlar"));
   }
   var weeks={};
@@ -3244,7 +3262,7 @@ function renderIssues(){
   });
   if(!flat("posted").some(function(s){return hasCat(s,"interaktiv");})){
     bad++;
-    out.push(issue("📊","Bu oraliqda 0 ta interaktiv story","Poll, savol qutisi, slider — birortasi chiqmagan. Algoritm signali yo'q, reach tushadi.","bad","Algoritm signali yo'q"));
+    out.push(issue("📊","Bu oraliqda 0 ta interaktiv "+U(),"Poll, savol qutisi, slider — birortasi chiqmagan. Algoritm signali yo'q, reach tushadi.","bad","Algoritm signali yo'q"));
   }
   var undone=[];days.forEach(function(d){if(d.past)d.plans.forEach(function(p){undone.push(d.date+": "+esc(p.t));});});
   if(undone.length){
@@ -3308,11 +3326,11 @@ function fetchCounts(list,my,rows){
   /* list: [{id,e}] — 6 tadan guruhlab, bir vaqtda 2 ta so'rov */
   var groups=[];for(var i=0;i<list.length;i+=6) groups.push(list.slice(i,i+6));
   var total=list.length,done=0,active=0,legacy=false;
-  setProg(40,"Story'lar 0/"+total+" · 40%");
+  setProg(40,MODES[MODE].Unit+"'lar 0/"+total+" · 40%");
   function progress(k){
     done+=k;var pc=40+60*done/total;
     if(my!==reqId) return;
-    setProg(pc,done<total?("Story'lar "+done+"/"+total+" · "+Math.round(pc)+"%"):"✓ 100%",done<total?"":"done");
+    setProg(pc,done<total?(MODES[MODE].Unit+"'lar "+done+"/"+total+" · "+Math.round(pc)+"%"):"✓ 100%",done<total?"":"done");
     refreshViews(rows);
   }
   function single(item){
@@ -3346,7 +3364,7 @@ function load(fresh){
   if(!auth) return;
   var key=range.from+"_"+range.to,my=++reqId;
   setConn("","Yuklanmoqda…");startProg();
-  var q={from:range.from,to:range.to,token:auth.token};if(fresh)q.fresh=1;
+  var q={from:range.from,to:range.to,token:auth.token,db:MODE};if(fresh)q.fresh=1;
   api(q,60000)
     .then(function(d){
       if(my!==reqId) return;
@@ -3378,7 +3396,7 @@ function load(fresh){
       document.getElementById("hUpd").textContent=hm(d.cachedAt?new Date(d.cachedAt):new Date()); /* server keshidan bo'lsa — kesh vaqti */
       setConn("ok","Notion");
       schedule(true);
-      loadSheet(my);
+      if(MODE==="story") loadSheet(my);
       if(missing.length) fetchCounts(missing,my,rows); else setProg(100,"✓ 100%","done");
     })
     .catch(function(e){
@@ -3420,6 +3438,25 @@ document.querySelectorAll(".tab").forEach(function(b){
   };
 });
 document.addEventListener("visibilitychange",function(){if(auth&&nextAt)schedule();});
+
+function applyMode(){
+  document.querySelectorAll("#modes .mode").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-m")===MODE);});
+  document.getElementById("hTitle").textContent=MODES[MODE].title;
+  document.title=MODES[MODE].title;
+}
+document.querySelectorAll("#modes .mode").forEach(function(b){
+  b.onclick=function(){
+    var m=b.getAttribute("data-m");if(m===MODE)return;
+    MODE=m;store("jsd_mode",m);applyMode();
+    /* boshqa baza: eski kunlar va tanlovni tozalab, qaytadan yuklaymiz */
+    days=[];selIdx=null;loadedKey=null;sheetBy={};sheetState="idle";openSet={};
+    ["metrics","cal","planInfo","issueList"].forEach(function(id){document.getElementById(id).innerHTML="";});
+    document.getElementById("dbox").innerHTML='<div class="empty">Notion\'dan ma\'lumot olinmoqda…</div>';
+    renderSheet();
+    if(auth) load();
+  };
+});
+applyMode();
 
 (function start(){
   var s=read("jsd_range"),r=null;
