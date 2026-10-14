@@ -2705,7 +2705,7 @@ body{background:var(--page) !important}
 var PREVIEW=false; /* true: Claude linki uchun namunaviy ma'lumot rejimi */
 var API="https://script.google.com/macros/s/AKfycbwddXHY3fgRY1youlZDrqb7i3-YCmZ_Mr6HcoPJziVm1l6J9jqs2x3ZMtDR5tFW48nk/exec";
 var REFRESH_MS=600000, REFRESH_HIDDEN_MS=900000; /* avtomatik yangilanish: tab ko'rinib tursa 10 daqiqa, fonda bo'lsa 15 daqiqa */
-var SCRIPT_VERSION="2026-10-15-v8";
+var SCRIPT_VERSION="2026-10-15-v9";
 
 var lbl={oxvat:"Oxvat",sotuv:"Sotuv",malumot:"Ma'lumot",foydali:"Foydali",interaktiv:"Interaktiv",other:"Boshqa"};
 var CAT={"oxvat":"oxvat","sotuv":"sotuv","ma'lumot":"malumot","malumot":"malumot","foydali":"foydali","interaktiv":"interaktiv"};
@@ -3035,7 +3035,7 @@ function toggleStory(el){
   if(!nowOpen||pageCache[id]) return;
   var body=el.querySelector(".tg-b");
   body.innerHTML='<span class="muted">Notion\'dan yuklanmoqda…</span>';
-  api({action:"page",id:id,token:auth?auth.token:""})
+  api({action:"page",id:id,db:MODE,token:auth?auth.token:""})
     .then(function(d){
       var r=finishPage(id,d.blocks);
       pageCache[id]=r;
@@ -3334,13 +3334,13 @@ function fetchCounts(list,my,rows){
     refreshViews(rows);
   }
   function single(item){
-    return api({action:"page",id:item.id,token:auth?auth.token:""})
+    return api({action:"page",id:item.id,db:MODE,token:auth?auth.token:""})
       .then(function(d){pageCache[item.id]=finishPage(item.id,d.blocks);var n=countStories(d.blocks);storyN[item.id]=n;delete failedN[item.id];memCache[item.id]={t:Date.now(),n:n};})
       .catch(function(){storyN[item.id]=0;failedN[item.id]=1;});
   }
   function runGroup(g){
     if(legacy) return g.reduce(function(p,item){return p.then(function(){return single(item).then(function(){progress(1);});});},Promise.resolve());
-    return api({action:"pages",ids:g.map(function(x){return x.id;}).join(","),es:g.map(function(x){return x.e||"";}).join(","),token:auth?auth.token:""})
+    return api({action:"pages",db:MODE,ids:g.map(function(x){return x.id;}).join(","),es:g.map(function(x){return x.e||"";}).join(","),token:auth?auth.token:""})
       .then(function(d){
         if(!d.pages){legacy=true;return runGroup(g);}      /* eski Apps Script: bittalab */
         g.forEach(function(item){

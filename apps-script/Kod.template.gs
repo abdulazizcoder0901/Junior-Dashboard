@@ -1,8 +1,9 @@
 // ===== SOZLAMALAR =====
-const VERSION = '2026-10-15-v8';                      // dashboard shu raqamni tekshiradi
+const VERSION = '2026-10-15-v9';                      // dashboard shu raqamni tekshiradi
 const TOKEN = 'NOTION_TOKEN_SHU_YERGA'; // Notion token
 const DB_ID = '3f354e42ad6580bf8c03d11c2bf5347b';      // Storislar jadvali (Junior Story)
 const TG_DB_ID = 'TG_BAZA_ID_SHU_YERGA';                // Telegram postlar jadvali (Junior TG)
+const TG_TOKEN = 'TG_TOKEN_SHU_YERGA';                  // "Junior Telegram Dashboard" integratsiyasi tokeni (bo'sh qolsa TOKEN ishlatiladi)
 const USERS = {                                        // login: parol
   'abdulaziz': 'PAROL_SHU_YERGA'
 };
@@ -16,10 +17,11 @@ const SHEET_NAME = '';   // bo'sh qolsa: havoladagi gid=... varag'i olinadi
 const STORY_RE = /^\s*\d+\s*[-–.)]?\s*stor(is|y|ies)/i;
 
 // ===== NOTION =====
-function headers() { return { Authorization: 'Bearer ' + TOKEN, 'Notion-Version': '2022-06-28' }; }
+function tokenFor(db) { return db === 'tg' && TG_TOKEN && !/SHU_YERGA/.test(TG_TOKEN) ? TG_TOKEN : TOKEN; }
+function headers(db) { return { Authorization: 'Bearer ' + tokenFor(db), 'Notion-Version': '2022-06-28' }; }
 
-function notion(path, body) {
-  const opt = { method: body ? 'post' : 'get', headers: headers(), muteHttpExceptions: true };
+function notion(path, body, db) {
+  const opt = { method: body ? 'post' : 'get', headers: headers(db), muteHttpExceptions: true };
   if (body) { opt.contentType = 'application/json'; opt.payload = JSON.stringify(body); }
   const data = JSON.parse(UrlFetchApp.fetch('https://api.notion.com/v1/' + path, opt).getContentText());
   if (data.object === 'error') throw new Error(data.code + ': ' + data.message);
@@ -79,11 +81,11 @@ function dbId(db) {
 }
 
 // Bazadagi sana ustuni: "Sana" bo'lsa o'sha, bo'lmasa birinchi Date turidagi ustun (6 soat keshlanadi)
-function dateProp(id) {
+function dateProp(id, db) {
   const cache = CacheService.getScriptCache(), key = 'dp_' + id;
   const hit = cache.get(key);
   if (hit) return hit;
-  const pr = notion('databases/' + id).properties || {};
+  const pr = notion('databases/' + id, null, db).properties || {};
   let name = pr['Sana'] && pr['Sana'].type === 'date' ? 'Sana' : Object.keys(pr).find(k => pr[k].type === 'date');
   if (!name) throw new Error('Notion bazasida sana (Date) ustuni topilmadi');
   cache.put(key, name, 21600);
@@ -91,7 +93,7 @@ function dateProp(id) {
 }
 
 function getStories(from, to, db) {
-  const id = dbId(db), dp = dateProp(id);
+  const id = dbId(db), dp = dateProp(id, db);
   let rows = [], cursor = null;
   do {
     const body = {
@@ -103,7 +105,7 @@ function getStories(from, to, db) {
       page_size: 100
     };
     if (cursor) body.start_cursor = cursor;
-    const data = notion('databases/' + id + '/query', body);
+    const data = notion('databases/' + id + '/query', body, db);
     data.results.forEach(p => {
       const pr = p.properties;
       if (!LAST_PROPS) { LAST_PROPS = {}; Object.keys(pr).forEach(k => LAST_PROPS[k] = pr[k].type); }
@@ -125,7 +127,7 @@ function getStories(from, to, db) {
 
 // Bir nechta story sahifasini parallel o'qiydi. Sahifa o'zgarmagan bo'lsa (e = oxirgi tahrir vaqti),
 // natija 6 soat keshdan olinadi — shuning uchun qayta yuklash juda tez.
-function getPages(ids, es) {
+function getPages(ids, es, db) {
   const cache = CacheService.getScriptCache();
   const keys = ids.map((id, i) => 'pg_' + id.replace(/-/g, '') + '_' + String(es[i] || '').replace(/\D/g, ''));
   const got = cache.getAll(keys.filter((k, i) => es[i]));
@@ -137,7 +139,7 @@ function getPages(ids, es) {
   for (let attempt = 0; attempt < 2 && need.length; attempt++) {
     const resps = UrlFetchApp.fetchAll(need.map(i => ({
       url: 'https://api.notion.com/v1/blocks/' + ids[i] + '/children?page_size=100',
-      headers: headers(), muteHttpExceptions: true
+      headers: headers(db), muteHttpExceptions: true
     })));
     const retry = [];
     resps.forEach((res, j) => {
@@ -158,10 +160,10 @@ function getPages(ids, es) {
   return out;
 }
 
-function getPage(id) {
+function getPage(id, db) {
   const out = []; let cursor = null;
   do {
-    const data = notion('blocks/' + id + '/children?page_size=100' + (cursor ? '&start_cursor=' + cursor : ''));
+    const data = notion('blocks/' + id + '/children?page_size=100' + (cursor ? '&start_cursor=' + cursor : ''), null, db);
     data.results.forEach(b => out.push(simplify(b)));
     cursor = data.has_more ? data.next_cursor : null;
   } while (cursor);
@@ -280,7 +282,7 @@ function warmDb(db) {
   if (data.length < 95000) CacheService.getScriptCache().put(warmKey(db), data, 1800);
   for (let i = 0; i < rows.length; i += 10) {           // Notion limitiga tushmaslik uchun 10 tadan
     const g = rows.slice(i, i + 10);
-    getPages(g.map(r => r.id), g.map(r => r.e));
+    getPages(g.map(r => r.id), g.map(r => r.e), db);
     Utilities.sleep(400);
   }
   return rows.length;
@@ -344,12 +346,12 @@ function doGet(e) {
       const user = checkSession(q.token);
       if (!user) res = { ok: false, error: 'auth' };
       else if (q.action === 'logout') { props().deleteProperty('s_' + q.token); res = { ok: true }; }
-      else if (q.action === 'page') res = { ok: true, blocks: getPage(q.id) };
+      else if (q.action === 'page') res = { ok: true, blocks: getPage(q.id, q.db) };
       else if (q.action === 'sheet') res = Object.assign({ ok: true }, sheetStats(q.from || '2000-01-01', q.to || '2100-12-31'));
       else if (q.action === 'pages') {
         const ids = String(q.ids || '').split(',').filter(String).slice(0, 10);
         const es = String(q.es || '').split(',');
-        res = { ok: true, pages: getPages(ids, es) };
+        res = { ok: true, pages: getPages(ids, es, q.db) };
       }
       else {
         const from = q.from || '2000-01-01', to = q.to || '2100-12-31';
@@ -394,7 +396,7 @@ function test() {
 
 function testTG() {
   const id = dbId('tg');
-  Logger.log('TG bazasi: ' + id + ' | sana ustuni: ' + dateProp(id));
+  Logger.log('TG bazasi: ' + id + ' | token: ' + (tokenFor('tg') === TOKEN ? 'asosiy TOKEN' : 'TG_TOKEN') + ' | sana ustuni: ' + dateProp(id, 'tg'));
   const rows = getStories('2026-10-01', '2026-10-31', 'tg');
   Logger.log('USTUNLAR: ' + JSON.stringify(LAST_PROPS));
   Logger.log(rows.length + ' ta qator');
