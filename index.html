@@ -2975,7 +2975,7 @@ function buildCal(){
   });
   host.innerHTML=html;
   host.querySelectorAll(".dc[data-i]").forEach(function(el){
-    el.onclick=function(){selIdx=+el.getAttribute("data-i");buildCal();renderDetail();};
+    el.onclick=function(){selIdx=+el.getAttribute("data-i");buildCal();renderDetail();touch();};
   });
 }
 
@@ -3360,13 +3360,12 @@ function fetchCounts(list,my,rows){
   next();next();
 }
 
-var firstLoad=true; /* sahifa ochilganda/yangilanganda (F5, ⌘R) birinchi so'rov keshsiz — xuddi ⟳ kabi */
-function load(fresh){
+/* Har bir yuklash eng oxirgi ma'lumotni oladi (server keshi faqat sahifa matnlarini tezlashtiradi). */
+function load(){
   if(!auth) return;
-  if(firstLoad){fresh=true;firstLoad=false;}
   var key=range.from+"_"+range.to,my=++reqId;
   setConn("","Yuklanmoqda…");startProg();
-  var q={from:range.from,to:range.to,token:auth.token,db:MODE};if(fresh)q.fresh=1;
+  var q={from:range.from,to:range.to,token:auth.token,db:MODE,fresh:1};
   api(q,60000)
     .then(function(d){
       if(my!==reqId) return;
@@ -3431,15 +3430,18 @@ document.getElementById("showBtn").onclick=function(){
   var f=document.getElementById("dFrom").value,t=document.getElementById("dTo").value;
   if(f&&t) setRange({from:f,to:t,preset:"custom"});
 };
-document.getElementById("reload").onclick=function(){pageCache={};load(true);}; /* ⟳ — keshsiz, to'g'ridan-to'g'ri Notion'dan */
+document.getElementById("reload").onclick=function(){pageCache={};load();};
+/* Foydalanuvchi biror narsa bossa va ma'lumot 1 daqiqadan eski bo'lsa — fonda yangilaymiz. */
+var TOUCH_MS=60000;
+function touch(){if(auth&&lastLoadAt&&Date.now()-lastLoadAt>TOUCH_MS)load();}
 document.querySelectorAll(".tab").forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
     document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});
-    document.getElementById(b.getAttribute("data-tab")).classList.add("active");b.classList.add("active");
+    document.getElementById(b.getAttribute("data-tab")).classList.add("active");b.classList.add("active");touch();
   };
 });
-document.addEventListener("visibilitychange",function(){if(auth&&nextAt)schedule();});
+document.addEventListener("visibilitychange",function(){if(auth&&nextAt){schedule();if(!document.hidden)touch();}});
 
 function applyMode(){
   document.querySelectorAll("#modes .mode").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-m")===MODE);});
