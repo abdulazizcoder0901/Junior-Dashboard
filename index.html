@@ -2691,7 +2691,11 @@ var MSHORT=["yan","fev","mar","apr","may","iyn","iyl","avg","sen","okt","noy","d
 var range={from:null,to:null,preset:"week"}, selIdx=null, days=[], loadedKey=null, reqId=0, nextAt=null, timer=null;
 var auth=null, pageCache={}, openSet={}, storyN={}, failedN={}, lastRows=[], lastProps=null;
 var STORY_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис)|stor(y|is)\s*[-–#]?\s*\d+)/i;
-function countStories(blocks){return (blocks||[]).filter(function(x){return STORY_RE.test(x.text||"");}).length;}
+/* Notion'da story'lar ko'pincha bitta blok ichida Shift+Enter bilan yoziladi — har bir qatorni alohida tekshiramiz. */
+/* Qator ichida "… 5-story …" kelsa ham (Enter bosilmagan bo'lsa) shu joydan yangi qatorga ajratamiz. */
+var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис))/i;
+function textLines(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){out.push.apply(out,l.split(STORY_SPLIT));});return out;}
+function countStories(blocks){var n=0;(blocks||[]).forEach(function(x){textLines(x.text).forEach(function(l){if(STORY_RE.test(l))n++;});});return n;}
 
 /* ---------- helpers ---------- */
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -2955,8 +2959,8 @@ function blocksToHtml(blocks){
   var out="",list=null,count=0;
   function closeList(){if(list){out+="</ul>";list=null;}}
   blocks.forEach(function(b){
-    var t=esc(b.text||"");
-    if(STORY_RE.test(b.text||"")) count++;
+    var lines=textLines(b.text),t=lines.map(esc).join("<br>");
+    lines.forEach(function(l){if(STORY_RE.test(l))count++;});
     var url=safeUrl(b.url);
     if(b.type==="bulleted_list_item"||b.type==="numbered_list_item"||b.type==="to_do"){
       if(!list){out+="<ul>";list=true;}
@@ -2964,10 +2968,13 @@ function blocksToHtml(blocks){
     }
     closeList();
     if(/^heading_/.test(b.type)) out+='<div class="bh">'+t+'</div>';
-    else if(b.type==="image"&&url) out+='<img src="'+esc(url)+'" alt="'+t+'" loading="lazy">'+(t?'<p class="muted">'+t+'</p>':'');
+    else if(b.type==="image"&&url) out+='<img src="'+esc(url)+'" alt="'+esc(lines.join(" "))+'" loading="lazy">'+(t?'<p class="muted">'+t+'</p>':'');
     else if(url) out+='<p><a href="'+esc(url)+'" target="_blank" rel="noopener">'+(t||b.type)+' ↗</a></p>';
     else if(b.type==="divider") out+='<hr style="border:none;border-top:0.5px solid var(--card-bd);margin:8px 0">';
-    else if(t) out+='<p>'+t+'</p>';
+    else if(t) lines.forEach(function(l){
+      if(STORY_RE.test(l)) out+='<div class="bh">'+esc(l)+'</div>';
+      else if(l.trim()) out+='<p>'+esc(l)+'</p>';
+    });
     else out+='<p style="height:6px"></p>';
   });
   closeList();
@@ -3105,12 +3112,13 @@ function startProg(){
 function stopTimer(){clearInterval(progTimer);progTimer=null;}
 
 /* --- story sonlari keshi (sahifa o'zgarmasa qayta yuklanmaydi) --- */
-var cntCache=read("jsd_cnt")||{};
+store("jsd_cnt",null); /* eski (noto'g'ri sanalgan) kesh */
+var cntCache=read("jsd_cnt2")||{};
 function cacheGet(r){var c=cntCache[r.id];return (c&&r.e&&c.e===r.e)?c.n:null;}
 function cachePut(id,e,n){
   if(!e) return; cntCache[id]={e:e,n:n};
   var keys=Object.keys(cntCache); if(keys.length>800){keys.slice(0,keys.length-800).forEach(function(k){delete cntCache[k];});}
-  store("jsd_cnt",cntCache);
+  store("jsd_cnt2",cntCache);
 }
 var memCache={}; /* eski skript uchun: 5 daqiqa xotirada */
 

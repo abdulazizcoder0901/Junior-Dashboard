@@ -1,0 +1,4 @@
+# Statik sayt: build yo'q, index.html repo ildizidan beriladi.
+[build]
+  publish = "."
+  command = ""
