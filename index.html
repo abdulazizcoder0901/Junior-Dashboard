@@ -2696,7 +2696,7 @@ body{background:var(--page) !important}
 <script>
 var PREVIEW=false; /* true: Claude linki uchun namunaviy ma'lumot rejimi */
 var API="https://script.google.com/macros/s/AKfycbwddXHY3fgRY1youlZDrqb7i3-YCmZ_Mr6HcoPJziVm1l6J9jqs2x3ZMtDR5tFW48nk/exec";
-var REFRESH_MS=600000; /* Notion va Sheets avtomatik yangilanishi: 10 daqiqa */
+var REFRESH_MS=600000, REFRESH_HIDDEN_MS=900000; /* avtomatik yangilanish: tab ko'rinib tursa 10 daqiqa, fonda bo'lsa 15 daqiqa */
 var SCRIPT_VERSION="2026-10-14-v6";
 
 var lbl={oxvat:"Oxvat",sotuv:"Sotuv",malumot:"Ma'lumot",foydali:"Foydali",interaktiv:"Interaktiv",other:"Boshqa"};
@@ -3260,11 +3260,15 @@ function renderIssues(){
 function setConn(state,text){
   document.getElementById("hConn").innerHTML='<span class="hdot d-'+state+'"></span><span class="'+(state==="err"?"err":"")+'">'+text+'</span>';
 }
-function schedule(){
+var lastLoadAt=0;
+/* Keyingi so'rov oxirgi yuklashdan hisoblanadi; tab fonga o'tsa yoki qaytsa, muddat qayta hisoblanadi. */
+function schedule(fromLoad){
   clearTimeout(timer);
-  nextAt=new Date(Date.now()+REFRESH_MS);
+  if(fromLoad||!lastLoadAt) lastLoadAt=Date.now();
+  var wait=document.hidden?REFRESH_HIDDEN_MS:REFRESH_MS;
+  nextAt=new Date(lastLoadAt+wait);
   document.getElementById("hNext").textContent=hm(nextAt);
-  timer=setTimeout(function(){if(!document.hidden)load();else schedule();},REFRESH_MS);
+  timer=setTimeout(function(){if(auth)load();},Math.max(0,nextAt.getTime()-Date.now()));
 }
 var progTimer=null,progHide=null,progVal=0,progStart=0;
 function setProg(p,tx,state){
@@ -3372,13 +3376,13 @@ function load(){
       renderMetrics();buildCal();renderDetail();renderIssues();
       document.getElementById("hUpd").textContent=hm(new Date());
       setConn("ok","Notion");
-      schedule();
+      schedule(true);
       loadSheet(my);
       if(missing.length) fetchCounts(missing,my,rows); else setProg(100,"✓ 100%","done");
     })
     .catch(function(e){
       if(my!==reqId||e.message==="auth") return;
-      setConn("err","Ulanib bo'lmadi");schedule();stopTimer();setProg(progVal,"✕ "+(e.name==="AbortError"?"javob kelmadi":"xato"),"fail");
+      setConn("err","Ulanib bo'lmadi");schedule(true);stopTimer();setProg(progVal,"✕ "+(e.name==="AbortError"?"javob kelmadi":"xato"),"fail");
       if(key!==loadedKey){
         days=[];
         ["metrics","cal","planInfo"].forEach(function(id){document.getElementById(id).innerHTML="";});
@@ -3414,7 +3418,7 @@ document.querySelectorAll(".tab").forEach(function(b){
     document.getElementById(b.getAttribute("data-tab")).classList.add("active");b.classList.add("active");
   };
 });
-document.addEventListener("visibilitychange",function(){if(auth&&!document.hidden&&nextAt&&Date.now()>=nextAt.getTime())load();});
+document.addEventListener("visibilitychange",function(){if(auth&&nextAt)schedule();});
 
 (function start(){
   var s=read("jsd_range"),r=null;
