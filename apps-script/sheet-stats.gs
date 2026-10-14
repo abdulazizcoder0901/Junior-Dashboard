@@ -2,19 +2,27 @@
 // Kod.gs oxiriga qo'shiladi. Ustunlar sarlavha nomi bo'yicha topiladi:
 // Podpischiklar, Prosmotr 1 stories, Prosmotr ohirgi stories, Podpischiklar %, Lidlar, Podpiska fact.
 const SHEET_URL = 'JADVAL_HAVOLASINI_SHU_YERGA_QOYING';   // docs.google.com/spreadsheets/d/... havolasi
-const SHEET_NAME = '';   // bo'sh qolsa: "Prosmotr" sarlavhali birinchi varaq olinadi
+const SHEET_NAME = '';   // bo'sh qolsa: havoladagi gid=... varag'i olinadi
 
 function sheetStats(from, to) {
   const ss = SpreadsheetApp.openByUrl(SHEET_URL);
   const tz = ss.getSpreadsheetTimeZone();
-  const sheets = SHEET_NAME ? [ss.getSheetByName(SHEET_NAME)] : ss.getSheets();
-  for (const sh of sheets) {
-    if (!sh) continue;
+  // Varaq: SHEET_NAME > havoladagi gid=... > "Prosmotr" ustunlari eng ko'p topilgan varaq
+  const gid = (String(SHEET_URL).match(/[#&?]gid=(\d+)/) || [])[1];
+  let sheets = ss.getSheets();
+  if (SHEET_NAME) sheets = [ss.getSheetByName(SHEET_NAME)].filter(Boolean);
+  else if (gid != null) sheets = sheets.filter(sh => String(sh.getSheetId()) === gid);
+  if (!sheets.length) throw new Error('Varaq topilmadi: ' + (SHEET_NAME ? '"' + SHEET_NAME + '"' : 'gid=' + gid));
+  let best = null;
+  sheets.forEach(sh => {
     const rg = sh.getDataRange();
     const res = parseStats(rg.getValues(), rg.getDisplayValues(), from, to, v => Utilities.formatDate(v, tz, 'yyyy-MM-dd'));
-    if (res) { res.sheet = sh.getName(); return res; }
-  }
-  throw new Error('Jadvalda "Prosmotr" sarlavhali ustun topilmadi' + (SHEET_NAME ? ' ("' + SHEET_NAME + '" varag\'ida)' : ''));
+    if (!res) return;
+    res.sheet = sh.getName();
+    if (!best || Object.keys(res.cols).length > Object.keys(best.cols).length) best = res;
+  });
+  if (!best) throw new Error('"' + sheets[0].getName() + '"' + (sheets.length > 1 ? ' va boshqa varaqlarda' : ' varag\'ida') + ' "Prosmotr" sarlavhali ustun topilmadi');
+  return best;
 }
 
 function parseStats(values, disp, from, to, fmtDate) {
@@ -53,7 +61,7 @@ function parseStats(values, disp, from, to, fmtDate) {
   });
   const cols = {};
   Object.keys(col).forEach(k => { cols[k] = String(values[h][col[k]] || ('ustun ' + (col[k] + 1))); });
-  return { rows: out, cols: cols };
+  return { rows: out, cols: cols, head: values[h].map(String) };
 }
 
 function firstCol(rows, test) {
@@ -78,6 +86,9 @@ function num(v) {
 
 function testSheet() {
   const r = sheetStats('2026-10-01', '2026-10-31');
-  Logger.log('Varaq: ' + r.sheet + ' | Ustunlar: ' + JSON.stringify(r.cols));
+  Logger.log('Varaq: ' + r.sheet);
+  Logger.log('Sarlavha qatori: ' + JSON.stringify(r.head));
+  Logger.log('Topilgan ustunlar: ' + JSON.stringify(r.cols));
+  Logger.log(r.rows.length + ' ta Stories qatori');
   r.rows.forEach(x => Logger.log(JSON.stringify(x)));
 }
