@@ -2744,7 +2744,8 @@ var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|стори�
 function textLines(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){out.push.apply(out,l.split(STORY_SPLIT));});return out;}
 /* ---------- Rejim: Junior Story (Instagram) / Junior TG (Telegram) ---------- */
 var MODES={story:{title:"Junior Story Dashboard",unit:"story",Unit:"Story"},tg:{title:"Junior TG Dashboard",unit:"post",Unit:"Post"}};
-var MODE=(function(){try{var m=JSON.parse(localStorage.getItem("jsd_mode")||'"story"');return MODES[m]?m:"story";}catch(e){return "story";}})();
+/* Havola doim Junior Story bilan ochiladi; TG faqat manzilda #tg bo'lsa (TG ichida yangilanganda ham shu saqlanadi). */
+var MODE=location.hash==="#tg"?"tg":"story";
 /* Ikkala bo'limda ham "1-story" va "1-post" qatorlari sanaladi — Notion'da qaysi so'z yozilganining farqi yo'q. */
 var UNIT_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис|post|пост)|(stor(y|is)|post)\s*[-–#]?\s*\d+)/i;
 function U(){return MODES[MODE].unit;}
@@ -3490,7 +3491,8 @@ function applyMode(){
 document.querySelectorAll("#modes .mode").forEach(function(b){
   b.onclick=function(){
     var m=b.getAttribute("data-m");if(m===MODE)return;
-    MODE=m;store("jsd_mode",m);applyMode();
+    MODE=m;applyMode();
+    try{history.replaceState(null,"",location.pathname+location.search+(m==="tg"?"#tg":""));}catch(e){}
     /* boshqa baza: eski kunlar va tanlovni tozalab, qaytadan yuklaymiz */
     days=[];selIdx=null;loadedKey=null;sheetBy={};sheetState="idle";openSet={};
     ["metrics","cal","planInfo","issueList"].forEach(function(id){document.getElementById(id).innerHTML="";});
@@ -3499,6 +3501,7 @@ document.querySelectorAll("#modes .mode").forEach(function(b){
     if(auth) load();
   };
 });
+store("jsd_mode",null); /* eski versiya eslab qolgan bo'limni o'chiramiz */
 applyMode();
 
 (function start(){
