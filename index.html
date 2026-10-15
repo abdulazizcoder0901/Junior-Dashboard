@@ -2624,7 +2624,22 @@ body{background:var(--page) !important}
 #vis-container .lg-card input{width:100% !important;height:auto !important;padding:9px 12px !important;font-size:14px !important;border-radius:8px !important;border:0.5px solid var(--card-bd) !important;background:var(--page) !important;color:var(--txt) !important;box-sizing:border-box}
 #vis-container .lg-card button{width:100%;margin-top:18px;padding:10px !important;border-radius:8px !important;background:var(--acc) !important;color:var(--acc-tx) !important;border:none !important;font-size:14px !important;font-weight:500;cursor:pointer;transform:none !important}
 #vis-container .lg-card button:disabled{opacity:.6}
-.lg-err{font-size:12px;color:var(--no-tx);min-height:16px;margin-top:10px}
+.lg-err{font-size:12px;line-height:1.45;color:var(--no-tx);text-align:center;margin-top:12px;min-height:0}
+.lg-err.show{padding:8px 12px;border-radius:10px;background:var(--no-bg);border:0.5px solid var(--no-bd)}
+.pw{position:relative}
+#vis-container .lg-card .pw input{padding-right:42px !important}
+#vis-container .lg-card button.pw-eye{position:absolute;top:50%;right:5px;transform:translateY(-50%) !important;width:32px;height:32px;margin:0;padding:0 !important;display:flex;align-items:center;justify-content:center;border-radius:7px !important;background:transparent !important;color:var(--muted) !important;border:none !important}
+#vis-container .lg-card button.pw-eye:hover{color:var(--txt) !important;background:var(--acc-soft) !important}
+.pw-eye svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pw-eye .ic-off{display:none}
+.pw-eye[aria-pressed="true"] .ic-on{display:none}
+.pw-eye[aria-pressed="true"] .ic-off{display:block}
+#vis-container .lg-card button#lgBtn{display:flex;align-items:center;justify-content:center;gap:9px}
+#vis-container .lg-card button#lgBtn.busy{opacity:.85 !important;cursor:progress}
+.lg-spin{display:none;width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:lgspin .7s linear infinite}
+#lgBtn.busy .lg-spin{display:inline-block}
+@keyframes lgspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.lg-spin{animation-duration:2s}}
 @media (max-width:1340px){.rbar{flex-wrap:wrap;overflow:visible}}
 @media (max-width:640px){#vis-container{padding:4px 12px 32px}.metrics{grid-template-columns:repeat(2,1fr)}.week-grid,.cal-head{gap:3px}.sc{font-size:9px}.hstats{margin-left:0}.dc{min-height:56px;padding:6px 2px !important}.tg-b{padding-left:14px}.tg-h{flex-wrap:wrap}.tg-tags{width:100%;padding-left:42px}}
 </style>
@@ -2636,9 +2651,15 @@ body{background:var(--page) !important}
     <label for="lgUser">Login</label>
     <input id="lgUser" name="username" autocomplete="username" required>
     <label for="lgPass">Parol</label>
-    <input id="lgPass" name="password" type="password" autocomplete="current-password" required>
-    <button type="submit" id="lgBtn">Kirish</button>
-    <div class="lg-err" id="lgErr"></div>
+    <div class="pw">
+      <input id="lgPass" name="password" type="password" autocomplete="current-password" required>
+      <button type="button" class="pw-eye" id="pwEye" aria-label="Parolni ko'rsatish" aria-pressed="false" title="Parolni ko'rsatish">
+        <svg class="ic-on" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="ic-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+      </button>
+    </div>
+    <button type="submit" id="lgBtn"><span class="lg-spin" aria-hidden="true"></span><span id="lgBtnTx">Kirish</span></button>
+    <div class="lg-err" id="lgErr" role="status" aria-live="polite"></div>
   </form>
 </div>
 
@@ -2810,7 +2831,7 @@ function showLogin(msg){
   auth=null;store("jsd_auth",null);clearTimeout(timer);
   if(typeof stopTimer==="function"){stopTimer();var hp=document.getElementById("hProg");if(hp)hp.classList.add("hide");}
   document.getElementById("login").classList.remove("hide");
-  document.getElementById("lgErr").textContent=msg||"";
+  setLgErr(msg);
   setTimeout(function(){document.getElementById("lgUser").focus();},50);
 }
 function hideLogin(){
@@ -2831,24 +2852,38 @@ function loginRequest(u,p){
         .then(function(r){return r.json();});
     });
 }
+function setLgErr(msg){var e=document.getElementById("lgErr");e.textContent=msg||"";e.classList.toggle("show",!!msg);}
+/* "Tekshirilmoqda…" — tugmaning o'zida, o'rtada, aylanuvchi belgi bilan */
+function setLgBusy(on){
+  var btn=document.getElementById("lgBtn");
+  btn.disabled=on;btn.classList.toggle("busy",on);
+  document.getElementById("lgBtnTx").textContent=on?"Tekshirilmoqda…":"Kirish";
+  if(on) setLgErr("");
+}
+document.getElementById("pwEye").onclick=function(){
+  var inp=document.getElementById("lgPass"),show=inp.type==="password";
+  inp.type=show?"text":"password";
+  this.setAttribute("aria-pressed",show?"true":"false");
+  var t=show?"Parolni yashirish":"Parolni ko'rsatish";this.setAttribute("aria-label",t);this.title=t;
+  inp.focus();var n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}
+};
 document.getElementById("lgForm").onsubmit=function(ev){
   ev.preventDefault();
   var u=document.getElementById("lgUser").value.trim(), p=document.getElementById("lgPass").value;
-  var btn=document.getElementById("lgBtn"), err=document.getElementById("lgErr");
-  btn.disabled=true;err.textContent="Tekshirilmoqda…";
+  setLgBusy(true);
   loginRequest(u,p)
     .then(function(d){
-      btn.disabled=false;
+      setLgBusy(false);
       if(d&&d.ok&&d.token){
         auth={token:d.token,user:d.user||u};store("jsd_auth",auth);
-        document.getElementById("lgPass").value="";err.textContent="";
-        hideLogin();load();
+        var pi=document.getElementById("lgPass");pi.value="";pi.type="password";document.getElementById("pwEye").setAttribute("aria-pressed","false");
+        setLgErr("");hideLogin();load();
       } else if(Array.isArray(d)){
-        err.textContent="Apps Script hali yangilanmagan (login yo'q). Yangi kodni joylab, yangi versiya chiqaring.";
-      } else if(d&&d.error==="login") err.textContent="Login yoki parol noto'g'ri.";
-      else err.textContent="Server xatosi: "+((d&&(d.message||d.error))||"noma'lum javob")+(d&&d.v?" (skript "+d.v+")":"");
+        setLgErr("Apps Script hali yangilanmagan (login yo'q). Yangi kodni joylab, yangi versiya chiqaring.");
+      } else if(d&&d.error==="login") setLgErr("Login yoki parol noto'g'ri.");
+      else setLgErr("Server xatosi: "+((d&&(d.message||d.error))||"noma'lum javob")+(d&&d.v?" (skript "+d.v+")":""));
     })
-    .catch(function(){btn.disabled=false;err.textContent="Serverga ulanib bo'lmadi. Internetni tekshiring.";});
+    .catch(function(){setLgBusy(false);setLgErr("Serverga ulanib bo'lmadi. Internetni tekshiring.");});
 };
 document.getElementById("logoutBtn").onclick=function(){
   if(auth) api({action:"logout",token:auth.token}).catch(function(){});
