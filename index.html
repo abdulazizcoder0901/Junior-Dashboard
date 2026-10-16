@@ -1,5 +1,5 @@
 <!doctype html>
-<html data-saved=""><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link id="icon-font" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.42.0/dist/tabler-icons.min.css" media="print" onload="this.media='all'"><noscript><link id="icon-font" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.42.0/dist/tabler-icons.min.css"></noscript><style>
+<html data-saved=""><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link id="icon-font" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.42.0/dist/tabler-icons.min.css" media="print" onload="this.media='all'"><noscript><link id="icon-font" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.42.0/dist/tabler-icons.min.css"></noscript><style>
 :root{--font-anthropic-sans:"anthropic-sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;--font-anthropic-serif:"anthropic-serif", ui-serif, Georgia, "Times New Roman", serif}
 :root {
   --radius: calc(0.5rem * var(--cds-rem-scale, 1));
@@ -2436,7 +2436,18 @@ body[data-not-sent] > #vis-container ~ #not-sent {
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }</style><style>body { padding: 16px; background: var(--surface-1); }
-#vis-container { overflow: visible; }</style><title>Junior Story Dashboard</title></head><body><svg style="position:absolute;width:0;height:0" aria-hidden="true">
+#vis-container { overflow: visible; }</style><title>Junior Dashboard</title>
+<meta name="description" content="Junior IT: Instagram story va Telegram postlar kalendari, statistika va kunlik xulosa.">
+<meta property="og:title" content="Junior Dashboard">
+<meta property="og:description" content="Instagram story va Telegram postlar kalendari, statistika va kunlik xulosa.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Junior">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b84cf'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23fff'%3EJ%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b84cf'/%3E%3Ctext x='32' y='44' font-family='Arial,Helvetica,sans-serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23fff'%3EJ%3C/text%3E%3C/svg%3E"></head><body><svg style="position:absolute;width:0;height:0" aria-hidden="true">
     <defs>
       <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
         <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -2641,7 +2652,57 @@ body{background:var(--page) !important}
 @keyframes lgspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.lg-spin{animation-duration:2s}}
 @media (max-width:1340px){.rbar{flex-wrap:wrap;overflow:visible}}
-@media (max-width:640px){#vis-container{padding:4px 12px 32px}.metrics{grid-template-columns:repeat(2,1fr)}.week-grid,.cal-head{gap:3px}.sc{font-size:9px}.hstats{margin-left:0}.dc{min-height:56px;padding:6px 2px !important}.tg-b{padding-left:14px}.tg-h{flex-wrap:wrap}.tg-tags{width:100%;padding-left:42px}}
+.dc .S{display:none}
+.week-grid,.cal-head{grid-template-columns:repeat(7,minmax(0,1fr))}
+.dc{min-width:0;overflow:hidden}
+/* ---------- Planshet ---------- */
+@media (max-width:900px){
+  .hstats{margin-left:0;width:100%}
+  .hdr h1{font-size:18px}
+}
+/* ---------- Telefon ---------- */
+@media (max-width:640px){
+  #vis-container{padding:4px 12px 32px}
+  .modes{display:flex;width:100%}
+  #vis-container button.mode{flex:1;padding:9px 6px !important;font-size:13px !important}
+  .hdr{margin:6px 0 10px;gap:4px 10px}
+  .hdr h1{font-size:17px}
+  .hstats{gap:3px 12px;font-size:11px}
+  .hstats #hPlan:empty{display:none}
+  .rbar{gap:5px;margin-bottom:12px}
+  #vis-container .pill{padding:6px 10px !important}
+  #vis-container .rbar select{flex:1 1 100% !important}
+  #vis-container .rbar input[type=date]{flex:1 1 130px !important;min-width:0}
+  #showBtn{flex:1}
+  .rbar .dash{flex:none}
+  .tabs{margin-bottom:.75rem}
+  .metrics{grid-template-columns:repeat(2,1fr);gap:6px}
+  .mv{font-size:18px}
+  .week-grid,.cal-head{gap:3px}
+  .cal-head div{font-size:9px}
+  .dc{min-height:50px;padding:6px 1px !important;border-radius:8px !important}
+  .dc .L,.dc .dn{display:none}
+  .dc .S{display:inline}
+  .dd{font-size:13px !important;font-weight:600;color:var(--txt) !important;margin-bottom:2px}
+  .dd .tdy{display:inline-block;min-width:22px;padding:1px 4px;border-radius:10px;background:var(--acc);color:var(--acc-tx)}
+  .cnt{font-size:10px;margin-bottom:2px}
+  .dc .sc:not(.plan){display:none}
+  .sc.plan{font-size:9px;padding:1px 2px;margin:0 2px}
+  .month-title{font-size:12px}
+  .detail-box{padding:.85rem .85rem !important;border-radius:12px !important}
+  .tg-b{padding:4px 12px 12px 14px}
+  .tg-h{flex-wrap:wrap;padding:9px 10px}
+  .tg-tags{width:100%;padding-left:42px}
+  .smetrics{grid-template-columns:repeat(2,1fr)}
+  .smetrics .mv{font-size:17px}
+  .advice li{padding:8px 9px;font-size:12.5px}
+  .issue{padding:9px 10px}
+  /* iPhone'da 16px dan kichik maydonga bosilganda sahifa kattalashib ketmasin */
+  #vis-container .lg-card input,#vis-container .rbar select,#vis-container .rbar input[type=date]{font-size:16px !important}
+}
+@media (max-width:380px){
+  .smetrics,.metrics{gap:5px}
+}
 </style>
 
 <div id="login">
@@ -2980,15 +3041,17 @@ function dayCard(d,i){
   else if(d.past) cls+=" no";
   else if(!d.today) cls+=" future";
   if(i===selIdx) cls+=" sel";
-  var inner='<div class="dn">'+d.n+(d.today?' · bugun':'')+'</div><div class="dd">'+d.date+'</div>';
+  /* .L — keng ekran matni, .S — telefon uchun qisqa ko'rinish */
+  var dnum=+d.iso.slice(8,10);
+  var inner='<div class="dn">'+d.n+(d.today?' · bugun':'')+'</div><div class="dd"><span class="L">'+d.date+'</span><span class="S'+(d.today?' tdy':'')+'">'+dnum+'</span></div>';
   if(d.posted.length){
-    inner+='<div class="cnt">✓ '+fmtN(d.posted)+' ta '+U()+'</div>';
+    inner+='<div class="cnt"><span class="L">✓ '+fmtN(d.posted)+' ta '+U()+'</span><span class="S">✓'+fmtN(d.posted)+'</span></div>';
     var cats=[];d.posted.forEach(function(s){if(cats.indexOf(s.c)<0)cats.push(s.c);});
     inner+=cats.slice(0,2).map(function(c){return '<span class="sc s-'+c+'">'+lbl[c]+'</span>';}).join("");
   } else if(d.past||d.today){
-    inner+='<div class="cnt">'+(d.today?'hali yo\'q':'joylanmadi')+'</div>';
+    inner+='<div class="cnt"><span class="L">'+(d.today?'hali yo\'q':'joylanmadi')+'</span><span class="S">'+(d.today?'—':'✕')+'</span></div>';
   }
-  if(d.plans.length) inner+='<span class="sc plan">Reja: '+planTxt(d.plans)+'</span>';
+  if(d.plans.length) inner+='<span class="sc plan"><span class="L">Reja: '+planTxt(d.plans)+'</span><span class="S">R'+(sumN(d.plans)||d.plans.length)+'</span></span>';
   return '<div class="'+cls+'" data-i="'+i+'">'+inner+'</div>';
 }
 
@@ -3099,7 +3162,7 @@ function renderDetail(){
     '<div><div class="dt">'+d.label+(d.today?' — Bugun':'')+'</div><div class="ds">'+sub+'</div></div></div>';
   if(!d.stories.length){box.innerHTML=head;return;}
   var sot=catOf(d.posted,"sotuv");
-  var inter=catOf(d.posted,"interaktiv").length;
+  var inter=d.posted.filter(function(s){return hasCat(s,"interaktiv")||INTER_RE.test(pageTxt[s.id]||"");}).length;
   var badges='';
   if(d.posted.length){
     if(sot.length) badges+='<span class="warn">'+fmtN(sot)+' ta sotuv '+U()+'</span>';
