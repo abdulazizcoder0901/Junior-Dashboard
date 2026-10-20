@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Junior English — Ali va turist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #FFF7E8;
+    font-family: "Inter", "Noto Color Emoji", sans-serif; color: #1E2140; }
+  .layer { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; }
+  .abs { position: absolute; }
+
+  /* ---------- street ---------- */
+  #world { transform-origin: 275px 600px; }
+  .sky { background: linear-gradient(#7CCBFF, #CFEFFF 70%); }
+  .sun { left: 790px; top: 150px; width: 170px; height: 170px; border-radius: 50%; background: #FFD84D;
+    box-shadow: 0 0 0 30px rgba(255,216,77,.25), 0 0 0 60px rgba(255,216,77,.12); }
+  .cloud { height: 70px; border-radius: 40px; background: #fff; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+  .cloud::before { width: 90px; height: 90px; left: 30px; top: -45px; }
+  .cloud::after { width: 120px; height: 120px; left: 90px; top: -65px; }
+  .ground { top: 1440px; height: 480px; background: #EBDDC5; border-top: 14px solid #CDBB9C; }
+  .tiles { top: 1454px; height: 466px; background:
+    repeating-linear-gradient(90deg, transparent 0 178px, rgba(0,0,0,.06) 178px 182px); }
+
+  .bubble { position: absolute; background: #fff; border: 6px solid #1E2140; border-radius: 40px;
+    padding: 26px 32px; font-weight: 800; font-size: 44px; line-height: 1.25;
+    box-shadow: 0 12px 0 rgba(30,33,64,.15); }
+  .bubble::after { content: ""; position: absolute; bottom: -26px; width: 40px; height: 40px; background: #fff;
+    border-right: 6px solid #1E2140; border-bottom: 6px solid #1E2140; transform: rotate(45deg); }
+  .bubble.tl::after { left: 90px; }
+  .bubble.tr::after { right: 200px; }
+  #tBubble2::after { right: 120px; }
+  .bubble .rest { visibility: hidden; }
+
+  .cap { position: absolute; left: 50px; right: 50px; text-align: center; font-weight: 900;
+    font-size: 64px; line-height: 1.5; }
+  .cap span { background: #fff; padding: 10px 28px; border-radius: 26px;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone; box-shadow: 0 10px 0 rgba(30,33,64,.15); }
+  .cap .hl { background: #FFC93C; }
+
+  #think { left: 170px; top: 380px; width: 840px; height: 440px; }
+  .word { position: absolute; left: 0; top: 0; white-space: nowrap; font-weight: 800; font-size: 40px;
+    padding: 8px 22px; border-radius: 22px; color: #fff; }
+
+  /* ---------- problem ---------- */
+  #problem { background: #1E2140; color: #fff; }
+  #problem::before { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 10%, rgba(255,90,95,.35), transparent 45%); }
+  .ptitle { left: 0; right: 0; top: 380px; text-align: center; font-size: 100px; font-weight: 900; }
+  .ptitle em { font-style: normal; color: #FF5A5F; }
+  .pitem { left: 70px; right: 70px; background: #2C3270; border-radius: 34px; padding: 34px 40px;
+    font-size: 50px; font-weight: 800; line-height: 1.2; display: flex; gap: 26px; align-items: center; }
+  .pitem b { font-size: 60px; }
+  .parent { left: 70px; right: 70px; top: 1320px; text-align: center; font-size: 54px; font-weight: 800;
+    line-height: 1.3; color: #FFC93C; }
+
+  /* ---------- wipe ---------- */
+  #wipe { left: 540px; top: 960px; width: 2400px; height: 2400px; margin: -1200px 0 0 -1200px;
+    border-radius: 50%; background: #FFC93C; }
+  #wipeText { left: 0; right: 0; top: 820px; text-align: center; font-size: 130px; font-weight: 900; }
+
+  /* ---------- solution ---------- */
+  #solution { background: linear-gradient(165deg, #2D6BFF, #6A3CFF); color: #fff; }
+  #solution::before { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 15% 85%, rgba(255,201,60,.35), transparent 40%); }
+  .logo { left: 90px; right: 90px; top: 300px; height: 360px; background: #fff; border-radius: 48px; color: #1E2140;
+    display: flex; align-items: center; gap: 40px; padding: 0 50px; box-shadow: 0 18px 0 rgba(0,0,0,.18); }
+  .badge { position: relative; flex: none; width: 200px; height: 200px; border-radius: 52px; background: #FFC93C;
+    display: grid; place-items: center; font-size: 150px; font-weight: 900; color: #1E2140; }
+  .badge i { position: absolute; right: -34px; top: -30px; font-style: normal; font-size: 40px; font-weight: 900;
+    background: #FF5A5F; color: #fff; padding: 8px 18px; border-radius: 24px; }
+  .logo h1 { font-size: 92px; line-height: .95; font-weight: 900; letter-spacing: -2px; }
+  .logo h2 { font-size: 52px; font-weight: 800; color: #2D6BFF; margin-top: 8px; }
+  .logo small { display: block; font-size: 30px; font-weight: 700; color: #6B7090; margin-top: 14px; }
+  .feat { left: 90px; right: 90px; height: 150px; background: rgba(255,255,255,.14); border: 4px solid rgba(255,255,255,.35);
+    border-radius: 36px; display: flex; align-items: center; gap: 28px; padding: 0 40px;
+    font-size: 46px; font-weight: 800; line-height: 1.15; }
+  .feat b { font-size: 70px; }
+
+  /* ---------- CTA ---------- */
+  #cta { background: #FFF7E8; }
+  .blob { border-radius: 50%; }
+  .ctaTitle { left: 60px; right: 60px; top: 330px; text-align: center; font-size: 86px; font-weight: 900; line-height: 1.12; }
+  .ctaTitle span { color: #2D6BFF; }
+  .btn { left: 70px; right: 70px; top: 860px; height: 170px; border-radius: 85px; background: #FF5A5F; color: #fff;
+    display: grid; place-items: center; font-size: 47px; font-weight: 900; box-shadow: 0 16px 0 #C9363B; }
+  .info { left: 0; right: 0; text-align: center; font-size: 60px; font-weight: 900; }
+  .mini { left: 0; right: 0; top: 1360px; display: flex; justify-content: center; align-items: center; gap: 26px; }
+  .mini .badge { width: 120px; height: 120px; border-radius: 32px; font-size: 90px; }
+  .mini .badge i { font-size: 26px; right: -24px; top: -20px; padding: 5px 12px; border-radius: 16px; }
+  .mini div.t { font-size: 50px; font-weight: 900; line-height: 1; }
+  .mini div.t small { display: block; font-size: 30px; font-weight: 700; color: #6B7090; margin-top: 8px; }
+
+  .confetti { position: absolute; left: 0; top: 0; width: 22px; height: 34px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ======================= STREET ======================= -->
+<div id="street" class="layer">
+  <div id="world" class="layer">
+    <div class="layer sky"></div>
+    <div class="abs sun"></div>
+    <div id="cloud1" class="abs cloud" style="width:260px; top:330px"></div>
+    <div id="cloud2" class="abs cloud" style="width:200px; top:520px"></div>
+    <svg id="city" class="abs" style="left:0; top:0" width="1080" height="1450" viewBox="0 0 1080 1450"></svg>
+    <div class="abs layer ground" style="height:480px"></div>
+    <div class="abs layer tiles" style="height:466px"></div>
+
+    <!-- Ali -->
+    <svg id="ali" class="abs" style="left:50px; top:680px; overflow:visible" width="450" height="900" viewBox="0 0 300 600">
+      <ellipse cx="150" cy="585" rx="95" ry="14" fill="rgba(0,0,0,.15)"/>
+      <g id="aLegL"><rect x="108" y="430" width="38" height="135" rx="16" fill="#27306B"/>
+        <ellipse cx="122" cy="568" rx="32" ry="16" fill="#fff" stroke="#1E2140" stroke-width="5"/></g>
+      <g id="aLegR"><rect x="154" y="430" width="38" height="135" rx="16" fill="#27306B"/>
+        <ellipse cx="180" cy="568" rx="32" ry="16" fill="#fff" stroke="#1E2140" stroke-width="5"/></g>
+      <rect x="56" y="272" width="44" height="140" rx="18" fill="#FF5A5F"/>
+      <g id="aArmL"><rect x="50" y="268" width="38" height="150" rx="19" fill="#2459E0"/>
+        <circle cx="69" cy="425" r="22" fill="#F7C59F"/></g>
+      <rect x="72" y="250" width="156" height="205" rx="56" fill="#2D6BFF"/>
+      <path d="M108 256 Q150 300 192 256" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <rect x="100" y="370" width="100" height="50" rx="18" fill="#2459E0"/>
+      <circle cx="150" cy="330" r="26" fill="#FFC93C"/>
+      <text x="150" y="342" text-anchor="middle" font-family="Inter" font-weight="900" font-size="34" fill="#1E2140">J</text>
+      <g id="aArmR"><rect x="212" y="268" width="38" height="150" rx="19" fill="#2459E0"/>
+        <circle cx="231" cy="425" r="22" fill="#F7C59F"/></g>
+      <rect x="132" y="235" width="36" height="30" fill="#E8B48A"/>
+      <g id="aHead">
+        <circle cx="45" cy="168" r="20" fill="#F0B88E"/><circle cx="255" cy="168" r="20" fill="#F0B88E"/>
+        <circle cx="150" cy="160" r="105" fill="#F7C59F"/>
+        <path d="M45 165 C40 70 100 40 150 42 C205 40 262 70 255 165 C240 120 215 105 190 100 C200 115 195 125 185 128 C175 110 150 100 120 104 C95 108 60 125 45 165Z" fill="#3B2A20"/>
+        <path id="aBrowL" d="M92 132 Q112 122 132 132" stroke="#3B2A20" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <path id="aBrowR" d="M168 132 Q188 122 208 132" stroke="#3B2A20" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <g id="aEyeL"><ellipse cx="112" cy="172" rx="19" ry="23" fill="#fff"/>
+          <circle id="aPupL" cx="114" cy="175" r="11" fill="#1E2140"/><circle cx="118" cy="170" r="4" fill="#fff"/></g>
+        <g id="aEyeR"><ellipse cx="188" cy="172" rx="19" ry="23" fill="#fff"/>
+          <circle id="aPupR" cx="190" cy="175" r="11" fill="#1E2140"/><circle cx="194" cy="170" r="4" fill="#fff"/></g>
+        <circle cx="88" cy="210" r="16" fill="#FF8A80" opacity=".45"/><circle cx="212" cy="210" r="16" fill="#FF8A80" opacity=".45"/>
+        <path id="aSmile" d="M122 215 Q150 242 178 215" stroke="#7A2630" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path id="aWorry" d="M127 232 Q150 216 173 232" stroke="#7A2630" stroke-width="7" fill="none" stroke-linecap="round" opacity="0"/>
+        <ellipse id="aOpen" cx="150" cy="226" rx="15" ry="19" fill="#7A2630" opacity="0"/>
+        <g id="aGrin" opacity="0"><path d="M112 208 Q150 268 188 208 Z" fill="#7A2630"/>
+          <path d="M118 210 L182 210 L178 222 L122 222 Z" fill="#fff"/></g>
+        <path id="aSweat1" d="M262 90 q-14 22 0 30 q14 -8 0 -30z" fill="#7CC8FF" opacity="0"/>
+        <path id="aSweat2" d="M40 105 q-12 19 0 26 q12 -7 0 -26z" fill="#7CC8FF" opacity="0"/>
+      </g>
+    </svg>
+
+    <!-- Tourist -->
+    <svg id="tourist" class="abs" style="left:570px; top:572px; overflow:visible" width="450" height="1020" viewBox="0 0 300 680">
+      <ellipse cx="150" cy="665" rx="100" ry="14" fill="rgba(0,0,0,.15)"/>
+      <g id="tLegL"><rect x="110" y="480" width="34" height="150" rx="15" fill="#FAD7B5"/>
+        <rect x="110" y="600" width="34" height="26" fill="#fff"/>
+        <ellipse cx="122" cy="640" rx="34" ry="16" fill="#8A5A2B"/></g>
+      <g id="tLegR"><rect x="156" y="480" width="34" height="150" rx="15" fill="#FAD7B5"/>
+        <rect x="156" y="600" width="34" height="26" fill="#fff"/>
+        <ellipse cx="178" cy="640" rx="34" ry="16" fill="#8A5A2B"/></g>
+      <rect x="92" y="430" width="116" height="100" rx="22" fill="#C8A86B"/>
+      <g id="tArmL"><rect x="48" y="272" width="38" height="155" rx="19" fill="#FF7A45"/>
+        <circle cx="67" cy="432" r="22" fill="#FAD7B5"/>
+        <g transform="rotate(-12 40 440)"><rect x="0" y="400" width="90" height="70" rx="6" fill="#FFF3C4" stroke="#C8A86B" stroke-width="4"/>
+          <path d="M10 430 L35 415 L55 440 L80 420" stroke="#2BB673" stroke-width="5" fill="none"/></g></g>
+      <rect x="72" y="255" width="156" height="200" rx="50" fill="#FF7A45"/>
+      <circle cx="105" cy="300" r="12" fill="#FFD3B8"/><circle cx="196" cy="320" r="12" fill="#FFD3B8"/>
+      <circle cx="120" cy="420" r="12" fill="#FFD3B8"/><circle cx="185" cy="405" r="12" fill="#FFD3B8"/>
+      <path d="M95 265 L150 345 L205 265" stroke="#1E2140" stroke-width="5" fill="none"/>
+      <rect x="118" y="335" width="64" height="44" rx="9" fill="#1E2140"/>
+      <circle cx="150" cy="357" r="14" fill="#6B7280" stroke="#C9CDD8" stroke-width="4"/>
+      <g id="tArmR"><rect x="214" y="272" width="38" height="155" rx="19" fill="#FF7A45"/>
+        <circle cx="233" cy="432" r="22" fill="#FAD7B5"/></g>
+      <rect x="132" y="240" width="36" height="30" fill="#EFC39C"/>
+      <g id="tHead">
+        <circle cx="57" cy="180" r="18" fill="#EFC39C"/><circle cx="243" cy="180" r="18" fill="#EFC39C"/>
+        <circle cx="150" cy="175" r="95" fill="#FAD7B5"/>
+        <path d="M62 120 q-10 30 4 52 q4 -24 14 -40z M238 120 q10 30 -4 52 q-4 -24 -14 -40z" fill="#F2C14E"/>
+        <path d="M68 116 Q74 40 150 38 Q226 40 232 116Z" fill="#2BB673"/>
+        <rect x="68" y="98" width="164" height="18" fill="#1E7F4F"/>
+        <ellipse cx="150" cy="118" rx="138" ry="24" fill="#2BB673"/>
+        <path id="tBrowL" d="M98 150 Q118 141 138 150" stroke="#C99A2E" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path id="tBrowR" d="M162 150 Q182 141 202 150" stroke="#C99A2E" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <g id="tEyeL"><ellipse cx="118" cy="182" rx="15" ry="18" fill="#fff"/><circle cx="120" cy="185" r="9" fill="#1E5FA8"/></g>
+        <g id="tEyeR"><ellipse cx="182" cy="182" rx="15" ry="18" fill="#fff"/><circle cx="184" cy="185" r="9" fill="#1E5FA8"/></g>
+        <path d="M150 192 q10 18 -4 22" stroke="#D89A72" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path id="tSmile" d="M122 228 Q150 252 178 228" stroke="#7A2630" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path id="tHuh" d="M124 236 q13 -12 26 0 t26 0" stroke="#7A2630" stroke-width="7" fill="none" stroke-linecap="round" opacity="0"/>
+        <ellipse id="tWow" cx="150" cy="236" rx="16" ry="20" fill="#7A2630" opacity="0"/>
+      </g>
+    </svg>
+
+    <div id="tBubble" class="bubble tr" style="left:330px; top:300px; width:680px"><span class="shown"></span><span class="rest"></span></div>
+    <div id="tBubble2" class="bubble tr" style="left:640px; top:360px; width:410px; font-size:38px"><span class="shown"></span><span class="rest"></span></div>
+    <div id="aBubble" class="bubble tl" style="left:40px; top:470px; width:580px; font-size:42px"><span class="shown"></span><span class="rest"></span></div>
+  </div>
+
+  <!-- thought cloud (not zoomed) -->
+  <div id="think" class="abs">
+    <svg class="abs" style="left:0; top:0" width="840" height="440" viewBox="0 0 840 440">
+      <g fill="#fff" stroke="#1E2140" stroke-width="6">
+        <path d="M150 380 C60 390 20 300 80 250 C20 190 80 100 170 120 C190 40 320 20 380 80 C430 10 580 20 600 100 C700 70 800 150 760 230 C830 290 780 400 680 380 C640 440 520 440 470 400 C420 440 280 440 240 395 C210 410 170 400 150 380Z"/>
+        <circle cx="215" cy="425" r="18"/>
+        <circle cx="205" cy="455" r="10"/>
+      </g>
+    </svg>
+    <div id="words"></div>
+  </div>
+
+  <div id="cap1" class="cap" style="top:200px"></div>
+</div>
+
+<!-- ======================= PROBLEM ======================= -->
+<div id="problem" class="layer">
+  <div class="abs ptitle" id="pTitle">Muammo <em>nimada?</em></div>
+  <div class="abs pitem" id="p1" style="top:620px"><b>❌</b><span>So‘z yodlaydi, lekin gapira olmaydi</span></div>
+  <div class="abs pitem" id="p2" style="top:850px"><b>❌</b><span>Xato qilishdan qo‘rqadi</span></div>
+  <div class="abs pitem" id="p3" style="top:1080px"><b>❌</b><span>Darslar zerikarli — qiziqish yo‘q</span></div>
+  <div class="abs parent" id="pParent">Ota-ona esa:<br>“Shuncha yil o‘qidi-ku?!” 🤦</div>
+</div>
+
+<!-- ======================= WIPE ======================= -->
+<div id="wipeLayer" class="layer">
+  <div id="wipe" class="abs"></div>
+  <div id="wipeText" class="abs">Yechim bor! ✨</div>
+</div>
+
+<!-- ======================= SOLUTION ======================= -->
+<div id="solution" class="layer">
+  <div class="abs logo" id="logo">
+    <div class="badge">J<i>Hi!</i></div>
+    <div><h1>Junior</h1><h2>English School</h2><small>Junior IT Akademiyasi</small></div>
+  </div>
+  <div class="abs feat" id="f1" style="top:760px"><b>💻</b><span>Online darslar — uydan turib</span></div>
+  <div class="abs feat" id="f2" style="top:940px"><b>👦</b><span>8–17 yoshdagi bolalar uchun</span></div>
+  <div class="abs feat" id="f3" style="top:1120px"><b>📈</b><span>A1 dan IELTS gacha — darajaga qarab</span></div>
+  <div class="abs feat" id="f4" style="top:1300px"><b>🎬</b><span>Video darslar, uy vazifalari va loyihalar</span></div>
+</div>
+
+<!-- ======================= CTA ======================= -->
+<div id="cta" class="layer">
+  <div class="abs blob" id="blob1" style="left:-200px; top:-160px; width:620px; height:620px; background:#FFE39A"></div>
+  <div class="abs blob" id="blob2" style="left:700px; top:1500px; width:600px; height:600px; background:#CFE0FF"></div>
+  <div class="abs ctaTitle" id="ctaTitle">Farzandingiz ham ingliz tilida <span>bemalol gapirsin!</span> 🗣️</div>
+  <div class="abs btn" id="btn">Bepul konsultatsiyaga yoziling 👇</div>
+  <div class="abs info" id="phone" style="top:1090px">📞 +998 55 055 07 30</div>
+  <div class="abs info" id="handle" style="top:1190px; color:#2D6BFF">📲 @junior_it_academy</div>
+  <div class="abs mini" id="mini">
+    <div class="badge">J<i>Hi!</i></div>
+    <div class="t">Junior English School<small>Junior IT Akademiyasi</small></div>
+  </div>
+</div>
+
+<div id="confettiLayer" class="layer" style="pointer-events:none"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = {
+  out: x => 1 - Math.pow(1 - x, 3),
+  inOut: x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2,
+  back: x => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+};
+// visibility window with fade in/out
+const win = (t, a, b, fi = .25, fo = .25) => Math.min(prog(t, a, a + fi), 1 - prog(t, b - fo, b));
+function css(el, o = 1, x = 0, y = 0, s = 1, r = 0) {
+  el.style.opacity = o;
+  el.style.transform = `translate(${x}px,${y}px) scale(${s}) rotate(${r}deg)`;
+}
+function svgT(el, tf, origin) { el.style.transformOrigin = origin; el.style.transform = tf; }
+function show(el, on) { el.style.opacity = on ? 1 : 0; }
+// element that pops in at a, out at b
+function pop(el, t, a, b, d = .45) {
+  const v = win(t, a, b, .12, .25);
+  css(el, v, 0, 0, t < b - .25 ? lerp(.4, 1, ease.back(prog(t, a, a + d))) : lerp(1, .9, prog(t, b - .25, b)));
+}
+function slideIn(el, t, a, b, dx = -140) {
+  const k = ease.out(prog(t, a, a + .45));
+  css(el, win(t, a, b, .3, .3), lerp(dx, 0, k), 0, 1);
+}
+function typed(el, text, t, a, b) {
+  const chars = Array.from(text);
+  const n = Math.round(prog(t, a, b) * chars.length);
+  el.querySelector('.shown').textContent = chars.slice(0, n).join('');
+  el.querySelector('.rest').textContent = chars.slice(n).join('');
+}
+function caption(el, html) { if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; } }
+
+// ---------- static decor ----------
+(function city() {
+  const svg = $('city');
+  const cols = ['#F5B971', '#9AD0C2', '#F28B82', '#B5A8F5', '#8EC5FC', '#FFD27D', '#A7E3A1'];
+  let x = -20, i = 0, out = '';
+  while (x < 1100) {
+    const w = 150 + (i * 37) % 70, h = 380 + (i * 131) % 330, c = cols[i % cols.length];
+    const top = 1440 - h;
+    out += `<rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${c}"/>`;
+    out += `<rect x="${x}" y="${top}" width="${w}" height="16" fill="rgba(0,0,0,.08)"/>`;
+    for (let wy = top + 50; wy < 1380; wy += 90)
+      for (let wx = x + 24; wx < x + w - 40; wx += 56)
+        out += `<rect x="${wx}" y="${wy}" width="30" height="44" rx="6" fill="rgba(255,255,255,.65)"/>`;
+    x += w + 6; i++;
+  }
+  // trees
+  for (const tx of [40, 520, 1000]) {
+    out += `<rect x="${tx - 10}" y="1300" width="20" height="140" fill="#8A5A2B"/>`;
+    out += `<circle cx="${tx}" cy="1270" r="70" fill="#4CC38A"/><circle cx="${tx - 40}" cy="1300" r="50" fill="#3FB37C"/><circle cx="${tx + 42}" cy="1305" r="48" fill="#3FB37C"/>`;
+  }
+  svg.innerHTML = out;
+})();
+
+const WORDS = [
+  ['apple 🍎', '#FF5A5F'], ['is / am / are', '#2D6BFF'], ['Present Simple', '#6A3CFF'], ['table', '#22A06B'],
+  ['Past Perfect?!', '#F08C00'], ['the / a / an', '#1E2140'], ['dog 🐶', '#E64980'], ['???', '#FF5A5F'],
+];
+const wordEls = WORDS.map(([w, c]) => {
+  const d = document.createElement('div'); d.className = 'word'; d.textContent = w; d.style.background = c;
+  $('words').appendChild(d); return d;
+});
+
+// confetti (seeded)
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const CONF = Array.from({ length: 70 }, () => {
+  const d = document.createElement('div'); d.className = 'confetti';
+  d.style.background = ['#FFC93C', '#FF5A5F', '#2D6BFF', '#22C55E', '#6A3CFF', '#fff'][Math.floor(rnd() * 6)];
+  $('confettiLayer').appendChild(d);
+  return { el: d, x: rnd() * 1080, delay: rnd() * 1.2, speed: 500 + rnd() * 500, sway: 30 + rnd() * 60, spin: 200 + rnd() * 500, ph: rnd() * 6 };
+});
+
+// ---------- timeline ----------
+const T = {
+  streetA: [0, 13.7], problem: [13.6, 19.3], wipe: [18.9, 21.0], solution: [20.7, 28.2],
+  streetB: [28.0, 35.3], cta: [35.1, 41.0],
+};
+const DURATION = 41.0;
+
+function walkLegs(prefix, t, active, hipY) {
+  const a = active ? Math.sin(t * 12) * 16 : 0;
+  svgT($(prefix + 'LegL'), `rotate(${a}deg)`, `127px ${hipY}px`);
+  svgT($(prefix + 'LegR'), `rotate(${-a}deg)`, `173px ${hipY}px`);
+}
+function blink(t, times) {
+  for (const b of times) { const k = prog(t, b, b + .16); if (k > 0 && k < 1) return 1 - Math.sin(k * Math.PI) * .92; }
+  return 1;
+}
+
+function renderStreet(t) {
+  const inA = t < 20, tt = inA ? t : t - 28; // local time
+  const vis = inA ? win(t, -1, T.streetA[1], .01, .3) : win(t, T.streetB[0], T.streetB[1], .4, .3);
+  $('street').style.opacity = vis;
+  if (vis <= 0) return;
+
+  $('cloud1').style.left = (80 + t * 14) + 'px';
+  $('cloud2').style.left = (560 - t * 9) + 'px';
+
+  // ----- camera zoom on Ali (panic) -----
+  const zoom = inA ? lerp(1, 1.3, ease.inOut(prog(t, 6.5, 7.1))) - .3 * ease.inOut(prog(t, 10.7, 11.2)) : 1;
+  $('world').style.transform = `scale(${zoom})`;
+
+  // ----- Ali -----
+  const ali = $('ali');
+  let ax = 0;
+  if (inA) ax = lerp(-560, 0, ease.out(prog(t, 0, 1.6)));
+  const aliWalking = inA && t < 1.5;
+  const bob = aliWalking ? Math.abs(Math.sin(t * 12)) * -10 : Math.sin(t * 2.4) * 3;
+  ali.style.transform = `translate(${ax}px, ${bob}px)`;
+  walkLegs('a', t, aliWalking, 430);
+
+  const panic = inA && t > 6.6 && t < 13.6;
+  const payoffHappy = !inA && t > 31.1;
+  const shake = panic && t < 10.8 ? Math.sin(t * 60) * 1.5 : 0;
+  svgT($('aHead'), `translate(${shake}px,0)`, '150px 160px');
+
+  const eyeS = panic ? 1.22 : 1;
+  const bl = blink(t, [2.2, 5.0, 14.0, 29.0, 34.0]);
+  svgT($('aEyeL'), `scale(${eyeS}, ${eyeS * bl})`, '112px 172px');
+  svgT($('aEyeR'), `scale(${eyeS}, ${eyeS * bl})`, '188px 172px');
+  const pr = panic ? 7 : 11;
+  $('aPupL').setAttribute('r', pr); $('aPupR').setAttribute('r', pr);
+  // pupils dart around while panicking
+  const dart = panic && t < 10.8 ? Math.sin(t * 9) * 5 : 0;
+  $('aPupL').setAttribute('cx', 114 + dart); $('aPupR').setAttribute('cx', 190 + dart);
+  svgT($('aBrowL'), panic ? 'rotate(-14deg) translate(0,-8px)' : 'none', '112px 128px');
+  svgT($('aBrowR'), panic ? 'rotate(14deg) translate(0,-8px)' : 'none', '188px 128px');
+
+  const speakingApple = inA && t > 11.1 && t < 12.3 && Math.floor(t * 8) % 2 === 0;
+  const speakingGood = !inA && t > 31.2 && t < 32.7 && Math.floor(t * 8) % 2 === 0;
+  show($('aSmile'), !panic && !payoffHappy);
+  show($('aWorry'), panic && !speakingApple);
+  show($('aOpen'), speakingApple || speakingGood);
+  show($('aGrin'), payoffHappy && !speakingGood);
+
+  for (const [id, off] of [['aSweat1', 0], ['aSweat2', .5]]) {
+    const el = $(id);
+    if (panic) { const k = ((t - 6.6 + off) % 1); el.style.opacity = 1 - k; svgT(el, `translate(0, ${k * 50}px)`, '0 0'); }
+    else el.style.opacity = 0;
+  }
+  // arms: raise right arm in triumph at payoff
+  const raise = !inA ? ease.back(prog(t, 32.7, 33.2)) : 0;
+  const swing = aliWalking ? Math.sin(t * 12) * 12 : 0;
+  svgT($('aArmR'), `rotate(${-150 * raise + swing}deg)`, '231px 285px');
+  const pointL = !inA ? ease.out(prog(t, 31.3, 31.7)) * (1 - prog(t, 32.5, 32.8)) : 0;
+  svgT($('aArmL'), `rotate(${-swing + 70 * pointL}deg)`, '69px 285px');
+
+  // ----- Tourist -----
+  const tour = $('tourist');
+  let tx;
+  if (inA) tx = lerp(560, 0, ease.out(prog(t, 2.6, 3.8)));
+  else tx = lerp(560, 0, ease.out(prog(t, 28.6, 29.7)));
+  const tWalking = inA ? (t > 2.6 && t < 3.7) : (t > 28.6 && t < 29.6);
+  tour.style.transform = `translate(${tx}px, ${tWalking ? Math.abs(Math.sin(t * 12)) * -10 : Math.sin(t * 2.1 + 1) * 3}px)`;
+  walkLegs('t', t, tWalking, 480);
+  const confused = inA && t > 12.2;
+  const wow = !inA && t > 32.9;
+  const tSpeaking = (inA && t > 3.9 && t < 5.3) || (inA && t > 12.3 && t < 12.9) ||
+                    (!inA && t > 29.8 && t < 30.9) || (!inA && t > 33.0 && t < 34.0);
+  const tTalk = tSpeaking && Math.floor(t * 8) % 2 === 0;
+  show($('tSmile'), !confused && !wow && !tTalk);
+  show($('tHuh'), confused && !tTalk);
+  show($('tWow'), wow || tTalk);
+  svgT($('tBrowL'), confused ? 'translate(0,-10px) rotate(-10deg)' : 'none', '118px 150px');
+  svgT($('tBrowR'), confused ? 'translate(0,4px) rotate(8deg)' : 'none', '182px 150px');
+  const tbl = blink(t, [4.6, 9.0, 30.4]);
+  svgT($('tEyeL'), `scaleY(${tbl})`, '118px 182px'); svgT($('tEyeR'), `scaleY(${tbl})`, '182px 182px');
+  svgT($('tArmR'), `rotate(${wow ? -40 * ease.back(prog(t, 33, 33.4)) : (tWalking ? Math.sin(t * 12) * 12 : 0)}deg)`, '233px 285px');
+  svgT($('tArmL'), `rotate(${tWalking ? -Math.sin(t * 12) * 10 : 0}deg)`, '67px 285px');
+
+  // ----- bubbles -----
+  const tb = $('tBubble'), tb2 = $('tBubble2'), ab = $('aBubble');
+  if (inA) {
+    typed(tb, 'Hi! Excuse me, where is the metro? 🚇', t, 3.9, 5.3); pop(tb, t, 3.8, 6.5);
+    typed(ab, 'Eee... I... am... apple? 🍎', t, 11.1, 12.3); pop(ab, t, 11.0, 13.7);
+    ab.style.top = '470px'; ab.style.width = '640px'; tb2.style.left = '700px'; tb2.style.width = '340px';
+    typed(tb2, 'Sorry... what? 🤨', t, 12.3, 12.9); pop(tb2, t, 12.2, 13.7);
+  } else {
+    typed(tb, 'Excuse me, where is the metro? 🚇', t, 29.8, 30.9); pop(tb, t, 29.7, 31.1);
+    typed(ab, 'Sure! Go straight, then turn left. It’s 5 minutes from here! 😊', t, 31.2, 32.7); pop(ab, t, 31.1, 35.3);
+    ab.style.top = '360px'; ab.style.width = '580px'; tb2.style.left = '640px'; tb2.style.width = '410px';
+    typed(tb2, 'Wow! Thank you! Your English is great! 👍', t, 33.0, 34.0); pop(tb2, t, 32.9, 35.3);
+  }
+
+  // ----- thought cloud -----
+  const th = $('think');
+  const thv = inA ? win(t, 7.0, 10.9, .3, .3) : 0;
+  css(th, thv, 0, 0, lerp(.6, 1, ease.back(prog(t, 7.0, 7.4))));
+  if (thv > 0) {
+    wordEls.forEach((el, i) => {
+      const ph = i / wordEls.length * Math.PI * 2;
+      const w = .9 + (i % 3) * .25;
+      const cx = 400 + Math.cos(t * w + ph) * 230 - el.offsetWidth / 2;
+      const cy = 220 + Math.sin(t * w * 1.3 + ph) * 110 - 30;
+      const appear = ease.back(prog(t, 7.2 + i * .18, 7.6 + i * .18));
+      el.style.opacity = prog(t, 7.2 + i * .18, 7.4 + i * .18);
+      el.style.transform = `translate(${cx}px,${cy}px) scale(${appear}) rotate(${Math.sin(t * 3 + i) * 8}deg)`;
+    });
+  }
+
+  // ----- captions -----
+  const c = $('cap1');
+  c.style.top = '200px';
+  if (inA) {
+    if (t < 3.3) { caption(c, '<span>Bu — Ali 👋</span>' + (t > 1.3 ? '<br><span>3 yildan beri <span class="hl">ingliz tili</span> o‘qiydi 📚</span>' : ''));
+      css(c, win(t, .5, 3.3, .2, .3), 0, 0, lerp(.7, 1, ease.back(prog(t, .5, .9)))); }
+    else if (t > 6.7 && t < 11.0) { c.style.top = '170px'; caption(c, '<span>So‘zlarni biladi...</span><br><span>lekin <span class="hl">gap tuza olmaydi</span> 😰</span>');
+      css(c, win(t, 6.9, 11.0, .2, .3), 0, 0, lerp(.7, 1, ease.back(prog(t, 6.9, 7.3)))); }
+    else if (t > 12.6) { caption(c, '<span>Tanish holatmi? 😅</span>');
+      css(c, win(t, 12.6, 13.7, .15, .2), 0, 0, lerp(.6, 1, ease.back(prog(t, 12.6, 13.0)))); }
+    else c.style.opacity = 0;
+  } else {
+    if (t < 29.6) { caption(c, '<span>Bir necha oydan keyin... ⏳</span>');
+      css(c, win(t, 28.2, 29.6, .2, .3), 0, 0, lerp(.7, 1, ease.back(prog(t, 28.2, 28.6)))); }
+    else if (t > 33.2) { caption(c, '<span>Mana bu — <span class="hl">natija!</span> 🏆</span>');
+      css(c, win(t, 33.2, 35.3, .15, .3), 0, 0, lerp(.6, 1, ease.back(prog(t, 33.2, 33.6)))); }
+    else c.style.opacity = 0;
+  }
+}
+
+function renderProblem(t) {
+  const v = win(t, ...T.problem, .3, .01);
+  $('problem').style.opacity = v;
+  if (v <= 0) return;
+  css($('pTitle'), prog(t, 13.8, 14.0), 0, 0, lerp(.6, 1, ease.back(prog(t, 13.8, 14.2))));
+  slideIn($('p1'), t, 14.5, 99); slideIn($('p2'), t, 15.4, 99, 140); slideIn($('p3'), t, 16.3, 99);
+  const pp = $('pParent');
+  css(pp, prog(t, 17.3, 17.5), 0, 0, lerp(.5, 1, ease.back(prog(t, 17.3, 17.7))), Math.sin(t * 5) * 2);
+}
+
+function renderWipe(t) {
+  const v = t >= T.wipe[0] && t < T.wipe[1] ? 1 : 0;
+  $('wipeLayer').style.opacity = v;
+  if (!v) return;
+  css($('wipe'), 1, 0, 0, ease.inOut(prog(t, 18.9, 19.5)));
+  css($('wipeText'), prog(t, 19.4, 19.55) * (1 - prog(t, 20.7, 21.0)), 0, 0, lerp(.3, 1, ease.back(prog(t, 19.4, 19.9))), Math.sin(t * 4) * 3);
+}
+
+function renderSolution(t) {
+  const v = win(t, ...T.solution, .3, .3);
+  $('solution').style.opacity = v;
+  if (v <= 0) return;
+  css($('logo'), prog(t, 20.9, 21.1), 0, lerp(-80, 0, ease.out(prog(t, 20.9, 21.4))), lerp(.5, 1, ease.back(prog(t, 20.9, 21.4))));
+  [22.3, 23.2, 24.1, 25.0].forEach((a, i) => {
+    const el = $('f' + (i + 1));
+    css(el, prog(t, a, a + .2), 0, lerp(60, 0, ease.out(prog(t, a, a + .4))), lerp(.7, 1, ease.back(prog(t, a, a + .45))));
+  });
+}
+
+function renderCTA(t) {
+  const v = win(t, T.cta[0], 99, .35, .1);
+  $('cta').style.opacity = v;
+  if (v <= 0) return;
+  css($('blob1'), 1, Math.sin(t) * 20, Math.cos(t) * 20, 1);
+  css($('blob2'), 1, Math.cos(t) * 20, Math.sin(t * 1.2) * 20, 1);
+  css($('ctaTitle'), prog(t, 35.4, 35.6), 0, 0, lerp(.6, 1, ease.back(prog(t, 35.4, 35.9))));
+  const pulse = t > 37 ? 1 + Math.sin((t - 37) * 6) * .035 : 1;
+  css($('btn'), prog(t, 36.3, 36.45), 0, 0, lerp(.3, 1, ease.back(prog(t, 36.3, 36.8))) * pulse);
+  slideIn($('phone'), t, 37.0, 99, -120); slideIn($('handle'), t, 37.4, 99, 120);
+  css($('mini'), prog(t, 37.9, 38.1), 0, lerp(40, 0, ease.out(prog(t, 37.9, 38.3))), 1);
+}
+
+function renderConfetti(t) {
+  const start = 33.0;
+  const on = t > start && t < 36.4;
+  $('confettiLayer').style.opacity = on ? 1 - prog(t, 35.6, 36.4) : 0;
+  if (!on) return;
+  for (const c of CONF) {
+    const lt = t - start - c.delay;
+    if (lt < 0) { c.el.style.opacity = 0; continue; }
+    const y = -60 + ((lt * c.speed) % 2050);
+    const x = c.x + Math.sin(lt * 3 + c.ph) * c.sway;
+    c.el.style.opacity = 1;
+    c.el.style.transform = `translate(${x}px,${y}px) rotate(${lt * c.spin}deg) scaleX(${Math.cos(lt * 6 + c.ph)})`;
+  }
+}
+
+window.DURATION = DURATION;
+window.render = function (t) {
+  renderStreet(t); renderProblem(t); renderWipe(t); renderSolution(t); renderCTA(t); renderConfetti(t);
+};
+render(0);
+</script>
+</body>
+</html>
