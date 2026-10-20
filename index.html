@@ -2437,9 +2437,9 @@ body[data-not-sent] > #vis-container ~ #not-sent {
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }</style><style>body { padding: 16px; background: var(--surface-1); }
 #vis-container { overflow: visible; }</style><title>Junior Dashboard</title>
-<meta name="description" content="Junior IT: Instagram story va Telegram postlar kalendari, statistika va kunlik xulosa.">
+<meta name="description" content="Junior IT: Instagram story, Telegram postlar va montaj videolari kalendari, statistika va kunlik xulosa.">
 <meta property="og:title" content="Junior Dashboard">
-<meta property="og:description" content="Instagram story va Telegram postlar kalendari, statistika va kunlik xulosa.">
+<meta property="og:description" content="Instagram story, Telegram postlar va montaj videolari kalendari, statistika va kunlik xulosa.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0e1116">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2661,10 +2661,11 @@ body{background:var(--page) !important}
   .hdr h1{font-size:18px}
 }
 /* ---------- Telefon ---------- */
+@media (max-width:480px){.modes .mj{display:none}}
 @media (max-width:640px){
   #vis-container{padding:4px 12px 32px}
   .modes{display:flex;width:100%}
-  #vis-container button.mode{flex:1;padding:9px 6px !important;font-size:13px !important}
+  #vis-container button.mode{flex:1;padding:9px 6px !important;font-size:13px !important;white-space:nowrap}
   .hdr{margin:6px 0 10px;gap:4px 10px}
   .hdr h1{font-size:17px}
   .hstats{gap:3px 12px;font-size:11px}
@@ -2726,8 +2727,9 @@ body{background:var(--page) !important}
 
 <div id="topbar"><i id="topbarFill"></i></div>
 <div class="modes" id="modes">
-  <button class="mode" data-m="story">📸 Junior Story</button>
-  <button class="mode" data-m="tg">✈️ Junior TG</button>
+  <button class="mode" data-m="story">📸 <span class="mj">Junior </span>Story</button>
+  <button class="mode" data-m="tg">✈️ <span class="mj">Junior </span>TG</button>
+  <button class="mode" data-m="montaj">🎬 <span class="mj">Junior </span>Montaj</button>
 </div>
 <div class="hdr">
   <h1 id="hTitle">Junior Story Dashboard</h1>
@@ -2787,7 +2789,7 @@ body{background:var(--page) !important}
 var PREVIEW=false; /* true: Claude linki uchun namunaviy ma'lumot rejimi */
 var API="https://script.google.com/macros/s/AKfycbwddXHY3fgRY1youlZDrqb7i3-YCmZ_Mr6HcoPJziVm1l6J9jqs2x3ZMtDR5tFW48nk/exec";
 var REFRESH_MS=600000, REFRESH_HIDDEN_MS=900000; /* avtomatik yangilanish: tab ko'rinib tursa 10 daqiqa, fonda bo'lsa 15 daqiqa */
-var SCRIPT_VERSION="2026-10-15-v9";
+var SCRIPT_VERSION="2026-10-20-v10";
 
 var lbl={oxvat:"Oxvat",sotuv:"Sotuv",malumot:"Ma'lumot",foydali:"Foydali",interaktiv:"Interaktiv",other:"Boshqa"};
 var CAT={"oxvat":"oxvat","sotuv":"sotuv","ma'lumot":"malumot","malumot":"malumot","foydali":"foydali","interaktiv":"interaktiv"};
@@ -2801,18 +2803,20 @@ var range={from:null,to:null,preset:"week"}, selIdx=null, days=[], loadedKey=nul
 var auth=null, pageCache={}, openSet={}, storyN={}, failedN={}, lastRows=[], lastProps=null;
 /* Notion'da story'lar ko'pincha bitta blok ichida Shift+Enter bilan yoziladi — har bir qatorni alohida tekshiramiz. */
 /* Qator ichida "… 5-story …" kelsa ham (Enter bosilmagan bo'lsa) shu joydan yangi qatorga ajratamiz. */
-var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис|post\b|пост))/i;
+var STORY_SPLIT=/\s+(?=\d{1,2}\s*[-–—.)]\s*(?:stor(?:is|y|ies)\b|сторис|post\b|пост|video\b|видео))/i;
 function textLines(t){var out=[];String(t||"").split(/\r?\n/).forEach(function(l){out.push.apply(out,l.split(STORY_SPLIT));});return out;}
-/* ---------- Rejim: Junior Story (Instagram) / Junior TG (Telegram) ---------- */
-var MODES={story:{title:"Junior Story Dashboard",unit:"story",Unit:"Story"},tg:{title:"Junior TG Dashboard",unit:"post",Unit:"Post"}};
-/* Havola doim Junior Story bilan ochiladi; TG faqat manzilda #tg bo'lsa (TG ichida yangilanganda ham shu saqlanadi). */
-var MODE=location.hash==="#tg"?"tg":"story";
-/* Ikkala bo'limda ham "1-story" va "1-post" qatorlari sanaladi — Notion'da qaysi so'z yozilganining farqi yo'q. */
+/* ---------- Rejim: Junior Story (Instagram) / Junior TG (Telegram) / Junior Montaj (videolar) ---------- */
+var MODES={story:{title:"Junior Story Dashboard",unit:"story",Unit:"Story"},tg:{title:"Junior TG Dashboard",unit:"post",Unit:"Post"},montaj:{title:"Junior Montaj Dashboard",unit:"video",Unit:"Video"}};
+/* Havola doim Junior Story bilan ochiladi; TG/Montaj faqat manzilda #tg yoki #montaj bo'lsa (yangilanganda ham shu saqlanadi). */
+var MODE=Object.prototype.hasOwnProperty.call(MODES,location.hash.slice(1))?location.hash.slice(1):"story";
+/* Hamma bo'limda "1-story" va "1-post" qatorlari sanaladi — Notion'da qaysi so'z yozilganining farqi yo'q. */
 var UNIT_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис|post|пост)|(stor(y|is)|post)\s*[-–#]?\s*\d+)/i;
+/* Montajda "1-video" qatorlari ham sanaladi (Story'da "video" so'zi oddiy matnda ko'p uchraydi, u yerda sanalmaydi). */
+var MONTAJ_RE=/^[^0-9A-Za-z\u0400-\u04FF]*(\d+\s*[-–—.)]?\s*(stor(is|y|ies)|сторис|post|пост|video|видео)|(stor(y|is)|post|video)\s*[-–#]?\s*\d+)/i;
 function U(){return MODES[MODE].unit;}
-function unitRe(){return UNIT_RE;}
-/* TG'da sahifada "1-post" qatorlari bo'lmasa, Notion qatorining o'zi bitta post hisoblanadi. */
-function unitCount(n){return MODE==="tg"?Math.max(1,n):n;}
+function unitRe(){return MODE==="montaj"?MONTAJ_RE:UNIT_RE;}
+/* TG va Montajda sahifada "1-post"/"1-video" qatorlari bo'lmasa, Notion qatorining o'zi bitta hisoblanadi. */
+function unitCount(n){return MODE==="story"?n:Math.max(1,n);}
 function countStories(blocks){var n=0;(blocks||[]).forEach(function(x){textLines(x.text).forEach(function(l){if(unitRe().test(l))n++;});});return unitCount(n);}
 
 /* ---------- helpers ---------- */
@@ -3179,7 +3183,7 @@ function nf(v){return v==null?"—":Math.round(v).toLocaleString("ru-RU");}
 function renderSheet(){
   var box=document.getElementById("sbox"),d=days[selIdx];
   if(!box) return;
-  box.style.display=MODE==="story"?"":"none";   /* TG rejimida Sheets statistikasi yo'q */
+  box.style.display=MODE==="story"?"":"none";   /* TG va Montaj rejimida Sheets statistikasi yo'q */
   if(MODE!=="story") return;
   if(!d){box.innerHTML="";return;}
   var head='<div class="sbox-h"><div class="dt">📊 Instagram statistika — '+d.label+'</div><div class="ds">Google Sheets</div></div>';
@@ -3412,7 +3416,7 @@ function stopTimer(){clearInterval(progTimer);progTimer=null;}
 store("jsd_cnt",null); /* eski (noto'g'ri sanalgan) kesh */
 store("jsd_cnt2",null); /* eski kesh bo'limlarni ajratmagan */
 var cntCache=read("jsd_cnt3")||{};
-function ck(id){return MODE+":"+id;}   /* sonlar har bo'lim (story/tg) uchun alohida */
+function ck(id){return MODE+":"+id;}   /* sonlar har bo'lim (story/tg/montaj) uchun alohida */
 function cacheGet(r){var c=cntCache[ck(r.id)];return (c&&r.e&&c.e===r.e)?c.n:null;}
 function cachePut(id,e,n){
   if(!e) return; cntCache[ck(id)]={e:e,n:n};
@@ -3470,8 +3474,9 @@ function load(){
   api(q,60000)
     .then(function(d){
       if(my!==reqId) return;
-      /* Eski Apps Script `db` ni bilmaydi va TG o'rniga Story bazasini qaytaradi — uni TG deb ko'rsatmaymiz. */
+      /* Eski Apps Script `db` ni bilmaydi va TG/Montaj o'rniga Story bazasini qaytaradi — uni boshqa bo'lim deb ko'rsatmaymiz. */
       if(MODE==="tg"&&!(String(d.v||"")>="2026-10-15-v8")) throw new Error("Apps Script eski versiyada ("+(d.v||"?")+") va Telegram bazasini o'qiy olmaydi. Yangi kodni joylab, Новая версия chiqaring");
+      if(MODE==="montaj"&&!(String(d.v||"")>="2026-10-20-v10")) throw new Error("Apps Script eski versiyada ("+(d.v||"?")+") va Montaj bazasini o'qiy olmaydi. Yangi kodni joylab, Новая версия chiqaring");
       var rows=d.rows||[], missing=[]; lastProps=d.props||null; lastRows=rows;
       var vw=document.getElementById("verWarn");
       var notes=[];
@@ -3555,7 +3560,7 @@ document.querySelectorAll("#modes .mode").forEach(function(b){
   b.onclick=function(){
     var m=b.getAttribute("data-m");if(m===MODE)return;
     MODE=m;applyMode();
-    try{history.replaceState(null,"",location.pathname+location.search+(m==="tg"?"#tg":""));}catch(e){}
+    try{history.replaceState(null,"",location.pathname+location.search+(m==="story"?"":"#"+m));}catch(e){}
     /* boshqa baza: eski kunlar va tanlovni tozalab, qaytadan yuklaymiz */
     days=[];selIdx=null;loadedKey=null;sheetBy={};sheetState="idle";openSet={};
     ["metrics","cal","planInfo","issueList"].forEach(function(id){document.getElementById(id).innerHTML="";});

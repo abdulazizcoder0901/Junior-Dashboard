@@ -1,9 +1,11 @@
 // ===== SOZLAMALAR =====
-const VERSION = '2026-10-15-v9';                      // dashboard shu raqamni tekshiradi
+const VERSION = '2026-10-20-v10';                      // dashboard shu raqamni tekshiradi
 const TOKEN = 'NOTION_TOKEN_SHU_YERGA'; // Notion token
 const DB_ID = '3f354e42ad6580bf8c03d11c2bf5347b';      // Storislar jadvali (Junior Story)
 const TG_DB_ID = 'TG_BAZA_ID_SHU_YERGA';                // Telegram postlar jadvali (Junior TG)
 const TG_TOKEN = 'TG_TOKEN_SHU_YERGA';                  // "Junior Telegram Dashboard" integratsiyasi tokeni (bo'sh qolsa TOKEN ishlatiladi)
+const MONTAJ_DB_ID = 'MONTAJ_BAZA_ID_SHU_YERGA';        // Montaj videolari jadvali (Junior Montaj)
+const MONTAJ_TOKEN = 'MONTAJ_TOKEN_SHU_YERGA';          // Montaj bazasi uchun alohida integratsiya tokeni (bo'sh qolsa TOKEN ishlatiladi)
 const USERS = {                                        // login: parol
   'abdulaziz': 'PAROL_SHU_YERGA'
 };
@@ -17,7 +19,12 @@ const SHEET_NAME = '';   // bo'sh qolsa: havoladagi gid=... varag'i olinadi
 const STORY_RE = /^\s*\d+\s*[-–.)]?\s*stor(is|y|ies)/i;
 
 // ===== NOTION =====
-function tokenFor(db) { return db === 'tg' && TG_TOKEN && !/SHU_YERGA/.test(TG_TOKEN) ? TG_TOKEN : TOKEN; }
+function isSet(v) { return !!v && !/SHU_YERGA/.test(v); }
+function tokenFor(db) {
+  if (db === 'tg' && isSet(TG_TOKEN)) return TG_TOKEN;
+  if (db === 'montaj' && isSet(MONTAJ_TOKEN)) return MONTAJ_TOKEN;
+  return TOKEN;
+}
 function headers(db) { return { Authorization: 'Bearer ' + tokenFor(db), 'Notion-Version': '2022-06-28' }; }
 
 function notion(path, body, db) {
@@ -73,11 +80,17 @@ function simplify(b) {
 
 let LAST_PROPS = null;   // diagnostika uchun: ustun nomlari va turlari
 
-// db: 'story' (Instagram story'lar) yoki 'tg' (Telegram postlar)
+// db: 'story' (Instagram story'lar), 'tg' (Telegram postlar) yoki 'montaj' (montaj videolari)
 function dbId(db) {
-  if (db !== 'tg') return DB_ID;
-  if (!TG_DB_ID || /SHU_YERGA/.test(TG_DB_ID)) throw new Error('TG_DB_ID sozlanmagan: Apps Script\'da Telegram Notion bazasi ID sini yozing');
-  return TG_DB_ID.replace(/-/g, '');
+  if (db === 'tg') {
+    if (!isSet(TG_DB_ID)) throw new Error('TG_DB_ID sozlanmagan: Apps Script\'da Telegram Notion bazasi ID sini yozing');
+    return TG_DB_ID.replace(/-/g, '');
+  }
+  if (db === 'montaj') {
+    if (!isSet(MONTAJ_DB_ID)) throw new Error('MONTAJ_DB_ID sozlanmagan: Apps Script\'da Montaj Notion bazasi ID sini yozing');
+    return MONTAJ_DB_ID.replace(/-/g, '');
+  }
+  return DB_ID;
 }
 
 // Bazadagi sana ustuni: "Sana" bo'lsa o'sha, bo'lmasa birinchi Date turidagi ustun (6 soat keshlanadi)
@@ -257,7 +270,7 @@ function num(v) {
 // setupTrigger() ni bir marta ishga tushiring: warmCache har 15 daqiqada o'tgan va joriy oy
 // story'larini hamda sahifa matnlarini oldindan yuklab, keshga qo'yadi.
 const WARM_KEY = 'rows_window';
-function warmKey(db) { return WARM_KEY + '_' + (db === 'tg' ? 'tg' : 'story'); }
+function warmKey(db) { return WARM_KEY + '_' + (db === 'tg' || db === 'montaj' ? db : 'story'); }
 
 function ymd(d) { return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
 
@@ -268,8 +281,11 @@ function warmWindow() {
 
 function warmCache() {
   let n = warmDb('story');
-  if (TG_DB_ID && !/SHU_YERGA/.test(TG_DB_ID)) {
+  if (isSet(TG_DB_ID)) {
     try { n += warmDb('tg'); } catch (e) { Logger.log('TG keshlanmadi: ' + e.message); }
+  }
+  if (isSet(MONTAJ_DB_ID)) {
+    try { n += warmDb('montaj'); } catch (e) { Logger.log('Montaj keshlanmadi: ' + e.message); }
   }
   return n;
 }
@@ -398,6 +414,15 @@ function testTG() {
   const id = dbId('tg');
   Logger.log('TG bazasi: ' + id + ' | token: ' + (tokenFor('tg') === TOKEN ? 'asosiy TOKEN' : 'TG_TOKEN') + ' | sana ustuni: ' + dateProp(id, 'tg'));
   const rows = getStories('2026-10-01', '2026-10-31', 'tg');
+  Logger.log('USTUNLAR: ' + JSON.stringify(LAST_PROPS));
+  Logger.log(rows.length + ' ta qator');
+  rows.slice(0, 15).forEach(r => Logger.log(r.d + ' | ' + r.t + ' | Kategoriya: "' + r.c + '" | Holat: "' + r.h + '"'));
+}
+
+function testMontaj() {
+  const id = dbId('montaj');
+  Logger.log('Montaj bazasi: ' + id + ' | token: ' + (tokenFor('montaj') === TOKEN ? 'asosiy TOKEN' : 'MONTAJ_TOKEN') + ' | sana ustuni: ' + dateProp(id, 'montaj'));
+  const rows = getStories('2026-10-01', '2026-10-31', 'montaj');
   Logger.log('USTUNLAR: ' + JSON.stringify(LAST_PROPS));
   Logger.log(rows.length + ' ta qator');
   rows.slice(0, 15).forEach(r => Logger.log(r.d + ' | ' + r.t + ' | Kategoriya: "' + r.c + '" | Holat: "' + r.h + '"'));
