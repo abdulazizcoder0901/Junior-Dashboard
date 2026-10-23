@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Uzbek voiceover with Navoiy TTS (CosyVoice2) on CPU, female or male voice.
 
-Each line is synthesized up to --tries times with different seeds; if Gemini is reachable
-(GEMINI key injected by the network secret), every take is transcribed and the take whose
+Each line is synthesized up to --tries times with different seeds. Every take is transcribed
+with a local Uzbek Whisper model (rubaistt v2 medium; Gemini is the fallback) and the take whose
 words best match the script is kept, so mispronounced takes are dropped.
 
 usage: ovoz.py --ovoz ayol|erkak lines.json OUT_DIR [--tries 3]
@@ -32,7 +32,32 @@ def wer(ref, hyp):
     return d[len(h)] / max(1, len(r))
 
 
+_ASR = []
+
+
+def transcribe_local(wav):
+    try:
+        import torch, torchaudio
+        from transformers import WhisperProcessor, WhisperForConditionalGeneration
+        if not _ASR:
+            d = str(HOME / "models/rubaistt")
+            _ASR[:] = [WhisperProcessor.from_pretrained(d), WhisperForConditionalGeneration.from_pretrained(d).eval()]
+        proc, asr = _ASR
+        x, sr = torchaudio.load(str(wav))
+        x = torchaudio.functional.resample(x.mean(0), sr, 16000)
+        feats = proc(x.numpy(), sampling_rate=16000, return_tensors="pt").input_features
+        with torch.inference_mode():
+            ids = asr.generate(feats, language="uz", task="transcribe", max_new_tokens=200)
+        return proc.batch_decode(ids, skip_special_tokens=True)[0].strip()
+    except Exception as e:
+        print("local ASR failed:", e, file=sys.stderr)
+        return None
+
+
 def transcribe(wav):
+    heard = transcribe_local(wav)
+    if heard:
+        return heard
     body = {"contents": [{"parts": [
         {"inlineData": {"mimeType": "audio/wav", "data": base64.b64encode(Path(wav).read_bytes()).decode()}},
         {"text": "Transcribe this Uzbek audio exactly, word for word. Output only the transcription."}]}]}

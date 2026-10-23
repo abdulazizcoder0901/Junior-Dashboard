@@ -17,6 +17,7 @@ python - <<PY
 from huggingface_hub import snapshot_download, hf_hub_download
 snapshot_download("FunAudioLLM/CosyVoice2-0.5B", revision="eec1ae6c79877dbd9379285cf8789c9e0879293d", local_dir="$H/models/CosyVoice2-0.5B")
 hf_hub_download("aisha-org/navoiy-tts", "emotion_600h_joint.pt", local_dir="$H/models/navoiy")
+snapshot_download("islomov/rubaistt_v2_medium", local_dir="$H/models/rubaistt")
 for f in ("emotions_40h.json", "uztts/__init__.py", "uztts/normalize.py"):
     hf_hub_download("aisha-org/navoiy-tts", f, local_dir="$H/navoiy")
 PY

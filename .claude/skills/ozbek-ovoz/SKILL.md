@@ -13,10 +13,11 @@ description: Uzbek voiceover (ozvuchka) for videos with the open-source Navoiy T
 3. Run with the venv python:
    `~/.cache/ozbek-ovoz/venv/bin/python .claude/skills/ozbek-ovoz/ovoz.py --ovoz ayol lines.json out/`
    (`--ovoz erkak` for the male voice). One `<id>.wav` (24 kHz) per line plus `report.json`.
-4. Check `report.json`: `wer` is how far Gemini's transcription of the kept take is from the script
-   (0 = word-perfect). Re-run lines with `wer > 0.15` with `--tries 5`.
+4. Check `report.json`: `wer` is how far the transcription of the kept take is from the script
+   (0 = word-perfect; the local Uzbek Whisper itself misses ~1 word in 6, so up to ~0.15 is usually fine).
+   Re-run lines with a higher `wer` with `--tries 5`, or reword them (very short lines come out worse).
 
-CPU speed is about 4-8 s of compute per second of audio. Gemini checking needs the
-`x-goog-api-key` network secret for generativelanguage.googleapis.com; without it the first take is kept.
+CPU speed is about 4-8 s of compute per second of audio. Takes are checked with the local
+rubaistt v2 medium Whisper model; Gemini (the `x-goog-api-key` network secret) is only a fallback.
 The voices are cloned from the CosyVoice sample prompts; to use a real person's voice, get their consent
 and a clean 10-20 s WAV, and add it to `VOICES` in ovoz.py.
